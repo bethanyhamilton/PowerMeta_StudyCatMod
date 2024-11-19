@@ -15,8 +15,8 @@ design_factors_bal <- list(
 
 ## 3 categories, J_c = 3
 data_ex <- tibble(studyid = c(1:9),
-                  k_j = rep(10, 9),
-                  n_j = rep(100, 9),
+                  k_j = rep(3, 9),
+                  n_j = rep(30, 9),
                   sigma_j = sqrt(4 / n_j), 
                   omega = rep(.10, 9),
                   rho = rep(.5, 9),
