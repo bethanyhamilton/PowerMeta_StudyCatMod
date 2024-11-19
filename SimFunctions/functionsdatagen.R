@@ -105,7 +105,7 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
  
 }
 
-find_lambda(d1 = 3, d2 = 23, x = 3.027998, area = 0.8603392, interval = c(0, 10), tol = 0.0001)
+#find_lambda(d1 = 3, d2 = 23, x = 3.027998, area = 0.8603392, interval = c(0, 10), tol = 0.0001)
 
 
 zeta <- function(pattern, lambda, weights){
@@ -116,39 +116,41 @@ zeta <- function(pattern, lambda, weights){
 }
 
 
-
-## test find zeta
-data_ex <- tibble(studyid = c(1:40),
-                  k_j = rep(10, 40),
-                  n_j = rep(100, 40),
-                  sigma_j = sqrt(4 / n_j), 
-                  omega = rep(.10, 40),
-                  rho = rep(.5, 40),
-                  tau = rep(.20, 40),
-                  #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
-                  two_cat =c(rep("a",20), rep("b",20))
-)
-
-data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
-
-
-df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
-
-
-df_num <- df2$df_num[1]
-df_den <- df2$nu_D[1] - df2$df_num[1] + 1
-
-weights <- df2$W
-
-fp <- c(0, 1, 2, 3)
-
-zeta <- zeta(pattern = fp, lambda = 1.562499, weights =weights )
-
-
 build_mu <- function(pattern, zeta){
   
   fp*zeta
   
 }
 
-build_mu(pattern = fp, zeta = zeta)
+
+## test find zeta
+#data_ex <- tibble(studyid = c(1:40),
+#                  k_j = rep(10, 40),
+#                  n_j = rep(100, 40),
+#                  sigma_j = sqrt(4 / n_j), 
+#                  omega = rep(.10, 40),
+#                  rho = rep(.5, 40),
+#                  tau = rep(.20, 40),
+#                  #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
+#                  two_cat =c(rep("a",20), rep("b",20))
+#)
+
+#data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
+
+
+#df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
+
+
+#df_num <- df2$df_num[1]
+#df_den <- df2$nu_D[1] - df2$df_num[1] + 1
+
+#weights <- df2$W
+
+#fp <- c(0, 1, 2, 3)
+
+#zeta_val <- zeta(pattern = fp, lambda = 1.562499, weights =weights )
+
+
+
+
+#build_mu(pattern = fp, zeta = zeta)

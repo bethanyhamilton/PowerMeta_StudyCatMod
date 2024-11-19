@@ -14,13 +14,13 @@ design_factors_bal <- list(
 
 
 ## 3 categories, J_c = 3
-data_ex <- tibble(studyid = c(1:40),
-                  k_j = rep(10, 40),
-                  n_j = rep(100, 40),
+data_ex <- tibble(studyid = c(1:9),
+                  k_j = rep(10, 9),
+                  n_j = rep(100, 9),
                   sigma_j = sqrt(4 / n_j), 
-                  omega = rep(.10, 40),
-                  rho = rep(.5, 40),
-                  tau = rep(.20, 40),
+                  omega = rep(.10, 9),
+                  rho = rep(.5, 9),
+                  tau = rep(.20, 9),
                   three_cat =c(rep("a",3), rep("b",3), rep("c",3))
 )
 
