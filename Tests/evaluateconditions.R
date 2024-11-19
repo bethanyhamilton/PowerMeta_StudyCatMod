@@ -1,17 +1,21 @@
-source("../SimFunctions/functionsdatagen.R")
+source("SimFunctions/functionsdatagen.R")
 
 
 design_factors_bal <- list(
   C = c(2, 3, 4),
   #C = c(2, 3, 4, 5, 6),
   #f_c = c(),
-  J_c = c(3, 5, 10, 20),
+  J_c = c(3, 5, 10, 20), #multiples of 12 for total.
   tau = c(0.05, 0.20, 0.40), 
   omega = c(0.05, 0.10, 0.20),
   rho = c(.2, .5, .8),
   P = c(0.05, 0.2, 0.4, 0.6, 0.8, .9)
 )
 
+
+#expand.grid()
+
+#apply function mu to row of the combinations of conditions. what sort of mu. 
 
 ## 3 categories, J_c = 3
 data_ex <- tibble(studyid = c(1:9),
@@ -40,6 +44,44 @@ f_c <- c(0, 1, 2)
 
 zeta_val <- zeta(pattern = f_c, lambda = lambda, weights =df2$W )
 
-build_mu(pattern = f_c, zeta = zeta_val)
+mu_values <- build_mu(pattern = f_c, zeta = zeta_val)
 
+# test to get the same. 
+power(dat = data_ex, moderator = data_ex$three_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j , rho = data_ex$rho, omega_sq = data_ex$omega, tau_sq = data_ex$tau, mu = mu_values, alpha = .05)
+
+# 
+
+
+# 
+## test find zeta
+#data_ex <- tibble(studyid = c(1:40),
+#                  k_j = rep(10, 40),
+#                  n_j = rep(100, 40),
+#                  sigma_j = sqrt(4 / n_j), 
+#                  omega = rep(.10, 40),
+#                  rho = rep(.5, 40),
+#                  tau = rep(.20, 40),
+#                  #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
+#                  two_cat =c(rep("a",20), rep("b",20))
+#)
+
+#data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
+
+
+#df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
+
+
+#df_num <- df2$df_num[1]
+#df_den <- df2$nu_D[1] - df2$df_num[1] + 1
+
+#weights <- df2$W
+
+#fp <- c(0, 1, 2, 3)
+
+#zeta_val <- zeta(pattern = fp, lambda = 1.562499, weights =weights )
+
+
+
+
+#build_mu(pattern = fp, zeta = zeta)
 
