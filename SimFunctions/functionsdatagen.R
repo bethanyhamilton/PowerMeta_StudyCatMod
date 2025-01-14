@@ -86,6 +86,9 @@ power_CHE_RVE_study_cat <- function(dat, moderator, cluster, sigma_j , rho, omeg
 }
 
 
+
+
+
 # plug into uniroot 
 non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
   
@@ -93,6 +96,29 @@ non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
   
   
 }
+
+#code for cdf of non-central f dist.
+# non_central_f_cdf_j <- function( lambda, J,  d1, d2, x){
+#   
+#   f  <- (((((1/2)*lambda)^J)/factorial(J))*(exp(1))^(-lambda/2)*pbeta(((d1*x)/(d2+d1*x)), (d1/2 + J), (d2/2))) 
+#   
+# }
+# 
+# 
+# non_central_f_cdf <- function(J, lambda,  d1, d2, x){
+#   
+#   f <-sapply(J, non_central_f_cdf_j,lambda = lambda, d1 = d1, d2 = d2, x = x)
+#   sum(unlist(f))
+#   
+# }
+# 
+# 
+# non_central_f_cdf_reverse <- function(J, lambda,  d1, d2, x, area){
+#   
+#   f <-sapply(J, non_central_f_cdf_j,lambda = lambda, d1 = d1, d2 = d2, x = x)
+#   sum(unlist(f)) - area
+#   
+# }
 
 # find lambda
 
