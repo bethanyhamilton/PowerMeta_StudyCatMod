@@ -1,5 +1,6 @@
 
 library(tidyverse)
+library(fastDummies)
 
 # study level weights
 study_level_weights <- function(k_j,sigma_j, tau_sq, rho, omega_sq  ){
@@ -9,8 +10,6 @@ study_level_weights <- function(k_j,sigma_j, tau_sq, rho, omega_sq  ){
   
   
 }
-
-
 
 
 
@@ -65,7 +64,7 @@ ncp <- function(weights, mu_p){
 
 
 
-power <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq, mu, alpha) {
+power_CHE_RVE_study_cat <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq, mu, alpha) {
   
   df <- multiple_categories(dat = dat, moderator = moderator, cluster = cluster,sigma_j = sigma_j, rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
   
@@ -105,7 +104,45 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
  
 }
 
-
+f_c <- function(pattern){
+  
+  # C  = 2
+  if(pattern == 1){
+    f_c <- c(0, 1)
+  }
+  
+  # C  = 3
+  if(pattern == 2){
+    f_c <- c(0, 1, 2)
+  }
+  
+  if(pattern == 3){
+    f_c <- c(0, 0, 1)
+  }
+  
+  if(pattern == 4){
+    f_c <- c(0, 1, 1)
+  }
+  
+  # C  = 4
+  if(pattern == 4){
+    f_c <- c(0, 1, 2, 3)
+  }
+  
+  if(pattern == 5){
+    f_c <- c(0, 0, 1, 2)
+  }
+  
+  if(pattern == 6){
+    f_c <- c(0, 0, 0, 1)
+  }
+  
+  if(pattern == 7){
+    f_c <- c(0, 0, 1, 1)
+  }
+  
+  return(f_c)
+}
 
 zeta <- function(pattern, lambda, weights){
   
@@ -114,11 +151,63 @@ zeta <- function(pattern, lambda, weights){
   return(zeta)
 }
 
-
+# beta coefficient 
 build_mu <- function(pattern, zeta){
   
   pattern*zeta
   
 }
 
+# design matrix 
+design_matrix <- function(C, J, bal){
+
+  
+  if(bal == "balanced"){
+    
+    J_c <- J/C
+    
+  }
+  
+  x <- list()
+  
+  for(i in 1:C){
+    x[[i]] <- c(rep(LETTERS[i], J_c))
+  }
+  
+  categories <- as.data.frame(bind_rows(map(x, bind_cols)))
+  
+  X <- model.matrix(~ 0 +`...1`, categories) 
+  
+  return(X)
+  
+}
+
+#X <- design_matrix(C= 4, J= 24, bal = "balanced")
+
+
+# data for approximation function tests
+dat_approx <- function(C, J, tau, omega, rho) {
+  
+  J_c <- J/C
+  
+  x <- list()
+  
+  for(i in 1:C){
+    x[[i]] <- c(rep(LETTERS[i], J_c))
+  }
+  
+  categories <- as.data.frame(bind_rows(map(x, bind_cols)))
+  
+  dat_approx <- tibble(studyid = c(1:J),
+                       k_j = rep(3, J),
+                       n_j = rep(30, J),
+                       sigma_j = sqrt(4 / n_j), 
+                       omega = rep(omega, J),
+                       rho = rep(rho, J),
+                       tau = rep(tau, J),
+                       cat = categories
+  )
+  
+  return(dat_approx)
+}
 
