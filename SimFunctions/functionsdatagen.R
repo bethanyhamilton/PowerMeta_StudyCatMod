@@ -12,7 +12,7 @@ study_level_weights <- function(k_j,sigma_j, tau_sq, rho, omega_sq  ){
 }
 
 
-
+# degrees of freedom for moderator with multiple categories
 multiple_categories <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq){
   
   
@@ -54,6 +54,7 @@ multiple_categories <- function(dat, moderator, cluster, sigma_j , rho, omega_sq
   
 }
 
+#NCP
 ncp <- function(weights, mu_p){
   
   mu_wavg = sum(weights*(mu_p))/ sum(weights)
@@ -62,7 +63,7 @@ ncp <- function(weights, mu_p){
 }
 
 
-
+# power for the CHE-RVE model
 
 power_CHE_RVE_study_cat <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq, mu, alpha) {
   
@@ -120,7 +121,7 @@ non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
 #   
 # }
 
-# find lambda
+# find lambda (NCP)
 
 find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
   
@@ -130,6 +131,8 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
  
 }
 
+
+# patterns of the beta_coefficients
 f_c <- function(pattern){
   
   # C  = 2
@@ -170,6 +173,8 @@ f_c <- function(pattern){
   return(f_c)
 }
 
+
+# find the scalling factor
 zeta <- function(pattern, lambda, weights){
   
   zeta <- sqrt((lambda)/(sum(weights*(pattern - sum(weights*pattern)/sum(weights) )^2)))
@@ -177,7 +182,7 @@ zeta <- function(pattern, lambda, weights){
   return(zeta)
 }
 
-# beta coefficient 
+# beta coefficients 
 build_mu <- function(pattern, zeta){
   
   pattern*zeta

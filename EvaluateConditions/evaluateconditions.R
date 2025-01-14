@@ -18,8 +18,6 @@ expand.grid(design_factors_bal)
 
 
 
-#expand.grid()
-
 #apply function mu to row of the combinations of conditions. what sort of mu. 
 
 # ## 3 categories, J_c = 3
