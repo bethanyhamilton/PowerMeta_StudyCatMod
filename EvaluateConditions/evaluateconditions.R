@@ -1,3 +1,4 @@
+rm(list=ls())
 library(tidyverse)
 
 
@@ -35,7 +36,8 @@ run_power <- function(C,
   
 }
 
-mu_values <- function(C, 
+mu_values <- function(
+                      #C, 
                       J, 
                       tau_sq, 
                       omega_sq, 
@@ -44,6 +46,42 @@ mu_values <- function(C,
                       k_j = 3, ####CHANGE THIS LATER
                       n_j = 30, ####CHANGE THIS LATER
                       f_c_val ) {
+  
+  # C  = 2
+  if(f_c_val == 1){
+    C= 2
+  }
+  
+  # C  = 3
+  if(f_c_val == 2){
+    C= 3
+  }
+  
+  if(f_c_val == 3){
+    C= 3
+  }
+  
+  if(f_c_val == 4){
+    C= 3
+  }
+  
+  # C  = 4
+  if(f_c_val == 5){
+    C= 4
+  }
+  
+  if(f_c_val == 6){
+    C= 4
+  }
+  
+  if(f_c_val == 7){
+    C= 4
+  }
+  
+  if(f_c_val == 8){
+    C= 4
+  }
+  
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
@@ -87,28 +125,100 @@ mu_values <- function(C,
   
 }
 
+run_mu <- function(
+                   J, 
+                   tau_sq, 
+                   omega_sq, 
+                   rho, 
+                   P, 
+                   k_j = 3, ####CHANGE THIS LATER
+                   n_j = 30, ####CHANGE THIS LATER
+                   f_c_val ) {
+  
+  mu_vector <- mu_values(
+    J = J,
+    tau_sq = tau_sq,
+    omega_sq = omega_sq,
+    rho = rho,
+    P = P,
+    k_j = k_j,
+    n_j = n_j,
+    f_c_val = f_c_val
+  )
+  
+  # C  = 2
+  if(f_c_val == 1){
+    C= 2
+  }
+  
+  # C  = 3
+  if(f_c_val == 2){
+    C= 3
+  }
+  
+  if(f_c_val == 3){
+    C= 3
+  }
+  
+  if(f_c_val == 4){
+    C= 3
+  }
+  
+  # C  = 4
+  if(f_c_val == 5){
+    C= 4
+  }
+  
+  if(f_c_val == 6){
+    C= 4
+  }
+  
+  if(f_c_val == 7){
+    C= 4
+  }
+  
+  if(f_c_val == 8){
+    C= 4
+  }
+  
+  
+  return(
+    tibble(
+      C= C, 
+      mu_val = list(mu_vector)
+    )
+  )
+  
+  
+}
 
-# test
-mu_vector <- mu_values(C = 4, J = 12, tau_sq = .05^2, omega_sq = .05^2, 
-                       rho = .5, P = .9, k_j = 3, n_j = 30, f_c_val = 4)
 
+# # test
+# mu_vector <- mu_values(J = 12, tau_sq = .05^2, omega_sq = .05^2, 
+#                        rho = .5, P = .9, k_j = 3, n_j = 30, f_c_val = 5)
+# 
+# 
+# run_power(C = 4,
+#           J = 12,
+#           tau_sq = .05^2,
+#           omega_sq = .05^2,
+#           rho = .5,
+#           k_j = 3,
+#           n_j = 30,
+#           mu_values= mu_vector)
 
-run_power(C = 4,
-          J = 12,
-          tau_sq = .05^2,
-          omega_sq = .05^2,
-          rho = .5,
-          k_j = 3,
-          n_j = 30,
-          mu_values= mu_vector)
-
-
+# test <- run_mu(J = 12, tau_sq = .05^2, omega_sq = .05^2,
+#                         rho = .5, P = .9, k_j = 3, n_j = 30, f_c_val = 5)
+# 
+# test$mu_val
 
 #------------------------------------------------------------------------------------
 
 
+
+
 design_factors_bal <- list(
-  C = c(2, 3, 4),
+ # C = c(2, 3, 4),
   J = c(12, 24, 36, 48, 60, 72),
   tau_sq = c(0.05, 0.20, 0.40)^2, 
   omega_sq = c(0.05, 0.10, 0.20)^2,
@@ -118,10 +228,11 @@ design_factors_bal <- list(
 )
 
 
-params <- expand.grid(design_factors_bal)
+params <- expand.grid(design_factors_bal) 
+dim(params) # 7776, so about 3.888 min to run  
 
 tm <- system.time(results <- plyr::mdply(params, 
-.fun = mu_values,
+.fun = run_mu,
 .inform = TRUE,
 .parallel = FALSE))
 
@@ -129,16 +240,12 @@ tm <- system.time(results <- plyr::mdply(params,
 save(results, file = "approximation_results.RData")
 
 
-params2 <- params[10001 ,]
-tm <- system.time(results <- plyr::mdply(params2, 
-                                         .fun = mu_values,
-                                         .inform = TRUE,
-                                         .parallel = FALSE))
+View(results |> filter(f_c_val == 1))
+
+View(results |> filter(f_c_val == 6))
 
 
 
-
-#apply function mu to row of the combinations of conditions. what sort of mu. 
 
 # ## 3 categories, J_c = 3
 # data_ex <- tibble(studyid = c(1:9),

@@ -250,6 +250,11 @@ f_c <- function(pattern){
 }
 
 
+
+
+
+
+
 # find the scalling factor
 zeta <- function(pattern, lambda, weights){
   
