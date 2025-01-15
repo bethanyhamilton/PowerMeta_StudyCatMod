@@ -1,21 +1,7 @@
+library(tidyverse)
+
+
 source("SimFunctions/functionsdatagen.R")
-
-
-
-design_factors_bal <- list(
-  C = c(2, 3, 4),
-  J = c(12, 24, 36, 48, 60, 72),
-  tau_sq = c(0.05, 0.20, 0.40)^2, 
-  omega_sq = c(0.05, 0.10, 0.20)^2,
-  rho = c(.2, .5, .8),
-  P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9)
-)
-
-
-expand.grid(design_factors_bal)
-
-
-
 
 
 run_power <- function(C, 
@@ -74,24 +60,37 @@ mu_values <- function(C,
   df_num <- dfs$df_num[1]
   df_den <- dfs$nu_D[1] - dfs$df_num[1] + 1
   
-  lambda <- find_lambda(d1= df_num, 
+ 
+   possibly_find_lambda <- possibly(.f = find_lambda, otherwise = NA)
+  
+  
+  lambda <- possibly_find_lambda(d1= df_num, 
                         d2 = df_den, 
                         x = qf(1-.05, df_num,df_den ), 
                         area = 1 - P, 
                         interval = c(0, 100), 
                         tol = 0.0001)
-    
-  zeta_val <- zeta(pattern = f_c_val, lambda = lambda, weights =dfs$W)
   
-  mu_values <- build_mu(pattern = f_c_val, zeta = zeta_val)
+  if(!is.na(lambda)) {
+    zeta_val <- zeta(pattern =  f_c(pattern = f_c_val), lambda = lambda, weights =dfs$W)
+    
+    mu_values <- build_mu(pattern =  f_c(pattern = f_c_val), zeta = zeta_val)
+    
+  }else{
+    mu_values <- NA
+  }
+    
+ 
   
   return(mu_values)
   
   
 }
 
+
+# test
 mu_vector <- mu_values(C = 4, J = 12, tau_sq = .05^2, omega_sq = .05^2, 
-                       rho = .5, P = .3, k_j = 3, n_j = 30, f_c_val = f_c(pattern = 4))
+                       rho = .5, P = .9, k_j = 3, n_j = 30, f_c_val = 4)
 
 
 run_power(C = 4,
@@ -100,10 +99,44 @@ run_power(C = 4,
           omega_sq = .05^2,
           rho = .5,
           k_j = 3,
-          ####CHANGE THIS LATER
           n_j = 30,
-          ####CHANGE THIS LATER
           mu_values= mu_vector)
+
+
+
+#------------------------------------------------------------------------------------
+
+
+design_factors_bal <- list(
+  C = c(2, 3, 4),
+  J = c(12, 24, 36, 48, 60, 72),
+  tau_sq = c(0.05, 0.20, 0.40)^2, 
+  omega_sq = c(0.05, 0.10, 0.20)^2,
+  rho = c(.2, .5, .8),
+  P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9),
+  f_c_val = c(1, 2, 3, 4, 5, 6, 7, 8)
+)
+
+
+params <- expand.grid(design_factors_bal)
+
+tm <- system.time(results <- plyr::mdply(params, 
+.fun = mu_values,
+.inform = TRUE,
+.parallel = FALSE))
+
+
+save(results, file = "approximation_results.RData")
+
+
+params2 <- params[10001 ,]
+tm <- system.time(results <- plyr::mdply(params2, 
+                                         .fun = mu_values,
+                                         .inform = TRUE,
+                                         .parallel = FALSE))
+
+
+
 
 #apply function mu to row of the combinations of conditions. what sort of mu. 
 

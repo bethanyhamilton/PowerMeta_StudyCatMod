@@ -1,6 +1,4 @@
 
-library(tidyverse)
-library(fastDummies)
 
 # study level weights
 study_level_weights <- function(k_j,sigma_j_sq, 
@@ -232,19 +230,19 @@ f_c <- function(pattern){
   }
   
   # C  = 4
-  if(pattern == 4){
+  if(pattern == 5){
     f_c <- c(0, 1, 2, 3)
   }
   
-  if(pattern == 5){
+  if(pattern == 6){
     f_c <- c(0, 0, 1, 2)
   }
   
-  if(pattern == 6){
+  if(pattern == 7){
     f_c <- c(0, 0, 0, 1)
   }
   
-  if(pattern == 7){
+  if(pattern == 8){
     f_c <- c(0, 0, 1, 1)
   }
   
