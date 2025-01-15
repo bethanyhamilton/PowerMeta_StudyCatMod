@@ -106,7 +106,7 @@ mu_values <- function(
                         d2 = df_den, 
                         x = qf(1-.05, df_num,df_den ), 
                         area = 1 - P, 
-                        interval = c(0, 100), 
+                        interval = c(0, 100000), 
                         tol = 0.0001)
   
   if(!is.na(lambda)) {
