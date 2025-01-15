@@ -2,7 +2,6 @@ source("../SimFunctions/functionsdatagen.R")
 
 
 
-
 design_factors_bal <- list(
   C = c(2, 3, 4),
   J = c(12, 24, 36, 48, 60, 72),
@@ -15,7 +14,20 @@ design_factors_bal <- list(
 
 expand.grid(design_factors_bal)
 
-
+run_power <- function(C, J, tau, omega, rho, P, 
+                      k_j = 3, ####CHANGE THIS LATER
+                      n_j = 30 ####CHANGE THIS LATER
+                      ){
+  
+ dat_app <-  dat_approx(C = C, J = J, tau = tau, 
+                        omega = omega, rho = rho, 
+                        k_j = k_j, n_j = n_j )
+ 
+ 
+ 
+  
+  
+}
 
 
 #apply function mu to row of the combinations of conditions. what sort of mu. 

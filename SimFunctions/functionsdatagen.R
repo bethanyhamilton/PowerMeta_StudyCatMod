@@ -199,15 +199,10 @@ design_matrix <- function(C, J, bal){
     
   }
   
-  x <- list()
   
-  for(i in 1:C){
-    x[[i]] <- c(rep(LETTERS[i], J_c))
-  }
+  categories <-   data.frame(cat = rep(LETTERS[1:C], each = J_c))
   
-  categories <- as.data.frame(bind_rows(map(x, bind_cols)))
-  
-  X <- model.matrix(~ 0 +`...1`, categories) 
+  X <- model.matrix(~ 0 + cat, categories) 
   
   return(X)
   
@@ -217,26 +212,19 @@ design_matrix <- function(C, J, bal){
 
 
 # data for approximation function tests
-dat_approx <- function(C, J, tau, omega, rho) {
+dat_approx <- function(C, J, tau, omega, rho, k_j, n_j) {
   
   J_c <- J/C
-  
-  x <- list()
-  
-  for(i in 1:C){
-    x[[i]] <- c(rep(LETTERS[i], J_c))
-  }
-  
-  categories <- as.data.frame(bind_rows(map(x, bind_cols)))
+ 
   
   dat_approx <- tibble(studyid = c(1:J),
-                       k_j = rep(3, J),
-                       n_j = rep(30, J),
+                       k_j = rep(k_j, J),
+                       n_j = rep(n_j, J),
                        sigma_j = sqrt(4 / n_j), 
                        omega = rep(omega, J),
                        rho = rep(rho, J),
                        tau = rep(tau, J),
-                       cat = categories
+                       cat = rep(LETTERS[1:C], each = J_c)
   )
   
   return(dat_approx)
