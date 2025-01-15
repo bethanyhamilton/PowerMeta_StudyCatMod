@@ -3,8 +3,9 @@ library(tidyverse)
 library(fastDummies)
 
 # study level weights
-study_level_weights <- function(k_j,sigma_j, tau_sq, rho, omega_sq  ){
-  weights <- k_j/ (k_j*tau_sq + (k_j-1)*rho*sigma_j + omega_sq + sigma_j)
+study_level_weights <- function(k_j,sigma_j_sq, 
+                                tau_sq, rho, omega_sq  ){
+  weights <- k_j/ (k_j*tau_sq + (k_j-1)*rho*sigma_j_sq + omega_sq + sigma_j_sq)
   
   return(weights)
   
@@ -13,17 +14,49 @@ study_level_weights <- function(k_j,sigma_j, tau_sq, rho, omega_sq  ){
 
 
 # degrees of freedom for moderator with multiple categories
-multiple_categories <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq){
+multiple_categories <- function(data= NULL, 
+                                moderator_val, 
+                                cluster_id, 
+                                sigma_j_sq_val, 
+                                rho_val, 
+                                omega_sq_val, 
+                                tau_sq_val){
   
+  ### get variables
   
+  if (!is.null(data)) {
+    moderator_call <- substitute(moderator_val)
+    cluster_call <- substitute(cluster_id)
+    sigma_j_sq_call <- substitute(sigma_j_sq_val)
+    rho_call <- substitute(rho_val)
+    omega_sq_call <- substitute(omega_sq_val)
+    tau_sq_call <- substitute(tau_sq_val)
+    
+    
+    env <- list2env(data, parent = parent.frame())
+    
+    moderator_val <- eval(moderator_call, env)
+    cluster_id <- eval(cluster_call, env)
+    sigma_j_sq_val <- eval(sigma_j_sq_call, env)
+    rho_val <- eval(rho_call, env)
+    omega_sq_val <- eval(omega_sq_call, env)
+    tau_sq_val <- eval(tau_sq_call, env)
+    
+  }
   
-  dat <- dat %>% 
-    mutate(moderator = moderator,
-           cluster = cluster, 
-           sigma_j = sigma_j,
-           omega_sq = omega_sq,
-           tau_sq = tau_sq,
-           rho = rho)
+  dat <- data.frame(
+    cluster = factor(cluster_id),
+    moderator = moderator_val,
+    sigma_j_sq = sigma_j_sq_val,
+    sigma_j_sq = sigma_j_sq_val,
+    rho = rho_val,
+    omega_sq = omega_sq_val, 
+    tau_sq = tau_sq_val
+    
+    
+    
+  )
+  
   
   c <-  length(unique(dat$moderator))
   q <-  c-1
@@ -39,7 +72,7 @@ multiple_categories <- function(dat, moderator, cluster, sigma_j , rho, omega_sq
   by_category <-  study_level_data %>% 
     group_by(moderator) %>% 
     mutate(
-      w_j = study_level_weights(k_j =k_j ,sigma_j = sigma_j, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) %>% 
+      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = sigma_j_sq, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) %>% 
     summarise(W = sum(w_j),
               E_Vr = 1/W,
               nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
@@ -65,9 +98,54 @@ ncp <- function(weights, mu_p){
 
 # power for the CHE-RVE model
 
-power_CHE_RVE_study_cat <- function(dat, moderator, cluster, sigma_j , rho, omega_sq, tau_sq, mu, alpha) {
+power_CHE_RVE_study_cat <- function(data = NULL, 
+                                    moderator_val, 
+                                    cluster_id, 
+                                    sigma_j_sq_val, 
+                                    rho_val, 
+                                    omega_sq_val, 
+                                    tau_sq_val,
+                                    mu, 
+                                    alpha) {
   
-  df <- multiple_categories(dat = dat, moderator = moderator, cluster = cluster,sigma_j = sigma_j, rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
+  ### get variables
+  
+  if (!is.null(data)) {
+    moderator_call <- substitute(moderator_val)
+    cluster_call <- substitute(cluster_id)
+    sigma_j_sq_call <- substitute(sigma_j_sq_val)
+    rho_call <- substitute(rho_val)
+    omega_sq_call <- substitute(omega_sq_val)
+    tau_sq_call <- substitute(tau_sq_val)
+    
+    
+    env <- list2env(data, parent = parent.frame())
+    
+    moderator_val <- eval(moderator_call, env)
+    cluster_id <- eval(cluster_call, env)
+    sigma_j_sq_val <- eval(sigma_j_sq_call, env)
+    rho_val <- eval(rho_call, env)
+    omega_sq_val <- eval(omega_sq_call, env)
+    tau_sq_val <- eval(tau_sq_call, env)
+    
+  }
+  
+  dat <- data.frame(
+    cluster = factor(cluster_id),
+    moderator = moderator_val,
+    sigma_j_sq = sigma_j_sq_val,
+    sigma_j_sq = sigma_j_sq_val,
+    rho = rho_val,
+    omega_sq = omega_sq_val, 
+    tau_sq = tau_sq_val
+    
+    
+    
+  )
+  
+  
+  
+  df <- multiple_categories(dat = dat, moderator = moderator, cluster = cluster,sigma_j_sq = sigma_j_sq, rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
   
   ncp <-  ncp(weights = df$W, mu_p = mu)
   
@@ -212,7 +290,7 @@ design_matrix <- function(C, J, bal){
 
 
 # data for approximation function tests
-dat_approx <- function(C, J, tau, omega, rho, k_j, n_j) {
+dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, n_j) {
   
   J_c <- J/C
  
@@ -220,10 +298,10 @@ dat_approx <- function(C, J, tau, omega, rho, k_j, n_j) {
   dat_approx <- tibble(studyid = c(1:J),
                        k_j = rep(k_j, J),
                        n_j = rep(n_j, J),
-                       sigma_j = sqrt(4 / n_j), 
-                       omega = rep(omega, J),
+                       sigma_j_sq = 4 / n_j, #### double check this
+                       omega_sq = rep(omega_sq, J),
                        rho = rep(rho, J),
-                       tau = rep(tau, J),
+                       tau_sq = rep(tau_sq, J),
                        cat = rep(LETTERS[1:C], each = J_c)
   )
   

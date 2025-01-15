@@ -1,12 +1,12 @@
-source("../SimFunctions/functionsdatagen.R")
+source("SimFunctions/functionsdatagen.R")
 
 
 
 design_factors_bal <- list(
   C = c(2, 3, 4),
   J = c(12, 24, 36, 48, 60, 72),
-  tau = c(0.05, 0.20, 0.40), 
-  omega = c(0.05, 0.10, 0.20),
+  tau_sq = c(0.05, 0.20, 0.40)^2, 
+  omega_sq = c(0.05, 0.10, 0.20)^2,
   rho = c(.2, .5, .8),
   P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9)
 )
@@ -14,21 +14,98 @@ design_factors_bal <- list(
 
 expand.grid(design_factors_bal)
 
-run_power <- function(C, J, tau, omega, rho, P, 
+
+
+
+
+run_power <- function(C, 
+                      J, 
+                      tau_sq, 
+                      omega_sq, 
+                      rho, 
+                      P, 
                       k_j = 3, ####CHANGE THIS LATER
-                      n_j = 30 ####CHANGE THIS LATER
+                      n_j = 30, ####CHANGE THIS LATER
+                      mu_values
                       ){
   
- dat_app <-  dat_approx(C = C, J = J, tau = tau, 
-                        omega = omega, rho = rho, 
+ dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
+                        omega_sq = omega_sq, rho = rho, 
                         k_j = k_j, n_j = n_j )
  
  
+ power <-  power_CHE_RVE_study_cat(data = dat_app, 
+                         moderator_val  = cat, 
+                         cluster_id = studyid, 
+                         sigma_j_sq_val = sigma_j_sq,
+                         rho_val = rho,
+                         omega_sq_val = omega_sq,
+                         tau_sq_val = tau_sq,
+                         mu = mu_values, 
+                         alpha = .05)
  
+
+
+ return(power)
+  
+}
+
+mu_values <- function(C, 
+                      J, 
+                      tau_sq, 
+                      omega_sq, 
+                      rho, 
+                      P, 
+                      k_j = 3, ####CHANGE THIS LATER
+                      n_j = 30, ####CHANGE THIS LATER
+                      f_c_val ) {
+  
+  dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
+                         omega_sq = omega_sq, rho = rho, 
+                         k_j = k_j, n_j = n_j )
+  
+  dfs <- multiple_categories(data = dat_app, 
+                             moderator_val  = cat, 
+                             cluster_id = studyid, 
+                             sigma_j_sq_val = sigma_j_sq,
+                             rho_val = rho,
+                             omega_sq_val = omega_sq,
+                             tau_sq_val = tau_sq)
+  
+  df_num <- dfs$df_num[1]
+  df_den <- dfs$nu_D[1] - dfs$df_num[1] + 1
+  
+  lambda <- find_lambda(d1= df_num, 
+                        d2 = df_den, 
+                        x = qf(1-.05, df_num,df_den ), 
+                        area = 1 - P, 
+                        interval = c(0, 100), 
+                        tol = 0.0001)
+    
+  zeta_val <- zeta(pattern = f_c_val, lambda = lambda, weights =dfs$W)
+  
+  mu_values <- build_mu(pattern = f_c_val, zeta = zeta_val)
+  
+  return(mu_values)
   
   
 }
 
+mu_vector <- mu_values(C = 4, J = 12, tau_sq = .05^2, omega_sq = .05^2, 
+                       rho = .5, P = .3, k_j = 3, n_j = 30, f_c_val = f_c(pattern = 4))
+
+
+run_power(C = 4,
+          J = 12,
+          tau_sq = .05^2,
+          omega_sq = .05^2,
+          rho = .5,
+          P = .3,
+          k_j = 3,
+          ####CHANGE THIS LATER
+          n_j = 30,
+          ####CHANGE THIS LATER
+          mu_values= mu_vector)
 
 #apply function mu to row of the combinations of conditions. what sort of mu. 
 
