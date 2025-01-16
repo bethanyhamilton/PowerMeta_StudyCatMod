@@ -61,16 +61,16 @@ multiple_categories <- function(data= NULL,
   
   df_num <- q
   
-  study_level_data <-  dat %>% 
-    group_by(cluster) %>% 
-    mutate(k_j = n()) %>% ungroup()
+  study_level_data <-  dat |> 
+    group_by(cluster) |>
+    mutate(k_j = n()) |> ungroup()
 
   
   
-  by_category <-  study_level_data %>% 
-    group_by(moderator) %>% 
+  by_category <-  study_level_data |> 
+    group_by(moderator) |> 
     mutate(
-      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = sigma_j_sq, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) %>% 
+      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = sigma_j_sq, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) |> 
     summarise(W = sum(w_j),
               E_Vr = 1/W,
               nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
@@ -85,7 +85,7 @@ multiple_categories <- function(data= NULL,
   
 }
 
-#NCP
+#  NCP
 ncp <- function(weights, mu_p){
   
   mu_wavg = sum(weights*(mu_p))/ sum(weights)
@@ -255,7 +255,7 @@ f_c <- function(pattern){
 
 
 
-# find the scalling factor
+# find the scaling factor
 zeta <- function(pattern, lambda, weights){
   
   zeta <- sqrt((lambda)/(sum(weights*(pattern - sum(weights*pattern)/sum(weights) )^2)))
@@ -309,5 +309,109 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, n_j) {
   )
   
   return(dat_approx)
+}
+
+
+#----------------------------------------------------------------------------
+
+#smd -- pulled and slightly modified from https://osf.io/e4npa
+
+generate_smd <- function(delta, k, N, Sigma) {
+  
+  # make sure delta is a vector
+  delta_vec <- rep(delta, length.out = k)
+  
+  # create Sigma matrix assuming equicorrelation
+  if (!is.matrix(Sigma)) Sigma <- Sigma + diag(1 - Sigma, nrow = k) # cor matrix for 1 study
+  
+  # generate numerator of SMD 
+  mean_diff <- rmvnorm(n = 1, mean = delta_vec, sigma = (4/N) * Sigma) 
+  
+  # covariance 
+  cov_mat <- as.matrix(rWishart(n = 1, df = N - 2, Sigma = Sigma)[,,1])
+  sigma_sq <- diag(cov_mat) / (N - 2)
+  
+  # SMD
+  d <- as.vector(mean_diff / sqrt(sigma_sq))  # cohen's d 
+  bias_corr <- (1 - (3/((4 * (N - 2)) - 1)))
+  g <- d * bias_corr # Hedges g
+  var_g <- bias_corr^2 * (4 / N + d^2 / (2 * (N - 2)))
+  
+  dat <- tibble(g = g, var_g = var_g)
+  
+  return(dat)
+}
+
+
+
+# modified function from https://osf.io/ut6qk (the study I a extending) I should 
+#probably try to make variable names consistent at some point...
+
+
+#-----------------------------------------------------------------------------
+### we are fixing rho to be the same across studies, but I'll keep this 
+### function here in case that changes. they obtained this reparameterization 
+### function from https://osf.io/gaz9t/ 
+
+# reparm <- function(cor_sd, cor_mu) {
+#   alpha <- cor_mu * ((cor_mu * (1-cor_mu) / cor_sd^2 )- 1)
+#   bet <-  (1-cor_mu) * ((cor_mu *(1-cor_mu) / cor_sd^2 )- 1)
+#   reparms <- as.data.frame(cbind(alpha, bet))
+#   return(reparms)
+# }
+#-----------------------------------------------------------------------------
+
+generate_meta <- function(J, tau_sq, omega_sq, X, mu_vector, 
+                         # cor_mu, cor_sd, 
+                          rho,
+                          sample_sizes, nj,
+                          return_study_params = FALSE,
+                          seed = NULL) {
+  
+  require(dplyr)
+  require(purrr)
+  if (!is.null(seed)) set.seed(seed)
+  
+  # Study data --------------------------------------------------------------
+  
+ # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
+  
+  Xbeta <- as.numeric(X %*% mu_vector)
+  
+  study_data <- 
+    tibble(
+      N = rep(sample_sizes, length.out = J),
+      nj = rep(nj, length.out = J), 
+    #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
+      Sigma = rep(rho, J) ## assume equi-correlation across studies -- 
+      #############ask James about this one
+    ) %>%
+    mutate(
+      u_j = rnorm(J, 0, sqrt(tau_sq)),
+      v_ij = map(nj, ~ rnorm(., 0, sqrt(omega_sq))),
+      delta = map2(u_j, v_ij, ~ Xbeta + .x + .y)
+     # delta2 = Xbeta + u_j + v_ij, 
+    ) %>%
+    select(delta, nj, N, Sigma)
+  
+  if (return_study_params) return(study_data)
+  
+  # Generate full meta data  -----------------------------------------------
+  
+  # first line runs generate_smd
+  meta_reg_dat <- 
+    pmap_df(study_data, generate_smd, .id = "studyid") %>%
+    mutate(
+      esid = 1:n()
+    )
+  
+  
+  return(meta_reg_dat)
+}
+
+# Function for random sampling n rows from dataset
+
+n_ES_empirical <- function(dat, J, with_replacement = TRUE) {
+  dat[sample(NROW(dat), size = J, replace = with_replacement),]
 }
 
