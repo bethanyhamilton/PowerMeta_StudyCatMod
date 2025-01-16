@@ -311,7 +311,8 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, n_j) {
   return(dat_approx)
 }
 
-
+### functions below are pulled and modified from https://osf.io/gaz9t/ (the study
+### I'm extending to be consistent in workflow. 
 #----------------------------------------------------------------------------
 
 #smd -- pulled and slightly modified from https://osf.io/e4npa
@@ -344,7 +345,7 @@ generate_smd <- function(delta, k, N, Sigma) {
 
 
 
-# modified function from https://osf.io/ut6qk (the study I a extending) I should 
+# 
 #probably try to make variable names consistent at some point...
 
 
