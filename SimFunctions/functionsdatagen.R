@@ -201,6 +201,14 @@ non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
 
 find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
   
+  
+  # needed to add this since mu should be 0 in this case since it is equal to
+  # type I error of .05 (we are only looking at that condition)
+  if(area == 0.95){
+    return(0)
+    
+  }
+  
  roots <- uniroot(f = non_central_f_cdf_reverse, d1 = d1, d2 = d2, x = x, area = area, interval = interval,  extendInt = "yes", tol = tol)
   
  return(roots$root)
@@ -616,63 +624,63 @@ generate_meta <- function(J, tau_sq,
 
 
 
-estimate_model <- function(data,formula, C, r= 0.7, smooth_vi = TRUE, control_list = list()
-){
-  
-  require(dplyr)
-  
-  
-  res <- tibble()
-  
-  V_mat <- 
-    clubSandwich::impute_covariance_matrix(
-      data$var_g,
-      cluster = data$studyid,
-      r = r,
-      smooth_vi = smooth_vi
-    )
-  
-  rma_fit <- 
-    purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-      as.formula(formula),
-      V_mat, 
-      random = ~ 1 | studyid / esid,
-      data = data,
-      test = "t",
-      sparse = TRUE,
-      verbose = FALSE,
-      control = control_list 
-    )
-  
-  coef_RVE <- clubSandwich::coef_test(rma_fit, vcov = "CR2", cluster = data$studyid)     
-  
-  
- # V_sep <- vcovCR(rma_fit, cluster = data$studyid, type = "CR2")
- # wald_test_results<- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov = V_sep)
-  
-  
-  wald_test_results <- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov =  "CR2")
-  
-  
-  res <- 
-    tibble(
-      est = list(coef_RVE$beta),
-      est_var = list(coef_RVE$SE^2),
-      df1 = wald_test_results$df_num,
-      df2 = wald_test_results$df_denom,
-      p_val = wald_test_results$p_val, 
-      model = "CHE",
-      var = "RVE"
-    ) %>%
-    bind_rows(res, .)
-  
-  res
-  
-}
+# estimate_model <- function(data,formula, C, r= 0.7, smooth_vi = TRUE, control_list = list()
+# ){
+#   
+#   require(dplyr)
+#   
+#   
+#   res <- tibble()
+#   
+#   V_mat <- 
+#     clubSandwich::impute_covariance_matrix(
+#       data$var_g,
+#       cluster = data$studyid,
+#       r = r,
+#       smooth_vi = smooth_vi
+#     )
+#   
+#   rma_fit <- 
+#     purrr::possibly(metafor::rma.mv, otherwise = NULL)(
+#       as.formula(formula),
+#       V_mat, 
+#       random = ~ 1 | studyid / esid,
+#       data = data,
+#       test = "t",
+#       sparse = TRUE,
+#       verbose = FALSE,
+#       control = control_list 
+#     )
+#   
+#   coef_RVE <- clubSandwich::coef_test(rma_fit, vcov = "CR2", cluster = data$studyid)     
+#   
+#   
+#  # V_sep <- vcovCR(rma_fit, cluster = data$studyid, type = "CR2")
+#  # wald_test_results<- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov = V_sep)
+#   
+#   
+#   wald_test_results <- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov =  "CR2")
+#   
+#   
+#   res <- 
+#     tibble(
+#       est = list(coef_RVE$beta),
+#       est_var = list(coef_RVE$SE^2),
+#       df1 = wald_test_results$df_num,
+#       df2 = wald_test_results$df_denom,
+#       p_val = wald_test_results$p_val, 
+#       model = "CHE",
+#       var = "RVE"
+#     ) %>%
+#     bind_rows(res, .)
+#   
+#   res
+#   
+# }
 
 
 
-estimate_model2 <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_list = list()
+estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_list = list()
 ){
   
   require(dplyr)
@@ -688,11 +696,12 @@ estimate_model2 <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_
   #                                              length(x)))
   # unlist(vi_list)
   
-  data <- data |> 
+  if (smooth_vi) { data <- data |> 
     group_by(data$studyid) |>
     mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
     ungroup()
-  
+  }
+ 
   
   
   # V_list <- 
@@ -755,12 +764,12 @@ estimate_model2 <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_
 
 
 ##### why are the results different? Probably smooth_vi.. should 
-
-res1 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
-)
-res2 <- estimate_model2(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
-)
-
+# 
+# res1 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
+# )
+# res2 <- estimate_model2(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
+# )
+# 
 
 
 # Need to add in estimation, sampling from empirical data set, run_sim functions
