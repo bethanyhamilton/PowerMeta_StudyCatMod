@@ -14,7 +14,7 @@ run_mu <- function(
                    rho, 
                    P, 
                    k_j = 3, ####CHANGE THIS LATER
-                   n_j = 30, ####CHANGE THIS LATER
+                   N = 30, ####CHANGE THIS LATER
                    f_c_val ) {
   
   mu_vector <- mu_values(
@@ -24,7 +24,7 @@ run_mu <- function(
     rho = rho,
     P = P,
     k_j = k_j,
-    n_j = n_j,
+    N = N,
     f_c_val = f_c_val
   )
   
