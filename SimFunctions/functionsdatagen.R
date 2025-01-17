@@ -680,13 +680,38 @@ estimate_model2 <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_
   
   res <- tibble()
   
+  # cluster <- droplevels(as.factor(data$studyid))
+  # vi_list <- split(data$var_g, data$studyid)
+  # 
+  # if (smooth_vi) 
+  #   vi_list <- lapply(vi_list, function(x) rep(mean(x, na.rm = TRUE), 
+  #                                              length(x)))
+  # unlist(vi_list)
+  
+  data <- data |> 
+    group_by(data$studyid) |>
+    mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
+    ungroup()
+  
+  
+  
+  # V_list <- 
+  #   vcalc(
+  #     vi = data$var_g,
+  #     cluster = data$studyid,
+  #     rho = r,
+  #     obs = data$esid,
+  #   #  data = data ## do I need this argument?
+  #     
+  #   )
+  
   V_list <- 
     vcalc(
-      vi = data$var_g,
+      vi = data$var_g_j,
       cluster = data$studyid,
       rho = r,
       obs = data$esid,
-    #  data = data ## do I need this argument?
+      #  data = data ## do I need this argument?
       
     )
   
@@ -729,7 +754,7 @@ estimate_model2 <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_
 }
 
 
-##### why are the results different? 
+##### why are the results different? Probably smooth_vi.. should 
 
 res1 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
 )
