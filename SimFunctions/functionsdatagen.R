@@ -271,17 +271,19 @@ build_mu <- function(pattern, zeta){
 }
 
 # design matrix 
-design_matrix <- function(C, J, bal){
+design_matrix <- function(C, J, bal, k_j){
 
   
   if(bal == "balanced"){
     
     J_c <- J/C
     
+    
   }
   
-  
-  categories <-   data.frame(cat = rep(LETTERS[1:C], each = J_c))
+  #needs to be k_j x k_j
+  cat <-   rep(LETTERS[1:C], each = J_c)
+  categories <-   data.frame(cat = rep(cat, times = k_j))
   
   X <- model.matrix(~ 0 + cat, categories) 
   
@@ -289,19 +291,20 @@ design_matrix <- function(C, J, bal){
   
 }
 
-#X <- design_matrix(C= 4, J= 24, bal = "balanced")
+#X <- design_matrix(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
 
 
 # data for approximation function tests
-dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, n_j) {
+dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N) {
   
   J_c <- J/C
  
   
   dat_approx <- tibble(studyid = c(1:J),
-                       k_j = rep(k_j, J),
-                       n_j = rep(n_j, J),
-                       sigma_j_sq = 4 / n_j, #### double check this
+                      # k_j = rep(k_j, J),
+                       k_j= k_j,
+                       N = N,
+                       sigma_j_sq = 4 / N, 
                        omega_sq = rep(omega_sq, J),
                        rho = rep(rho, J),
                        tau_sq = rep(tau_sq, J),
@@ -316,14 +319,14 @@ run_power <- function(C,
                       tau_sq, 
                       omega_sq, 
                       rho, 
-                      k_j = 3, ####CHANGE THIS LATER
-                      n_j = 30, ####CHANGE THIS LATER
+                      k_j, ####CHANGE THIS LATER
+                      N, ####CHANGE THIS LATER
                       mu_values
 ){
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
-                         k_j = k_j, n_j = n_j )
+                         k_j = k_j, N = N )
   
   
   power <-  power_CHE_RVE_study_cat(data = dat_app, 
@@ -349,8 +352,8 @@ mu_values <- function(
   omega_sq, 
   rho, 
   P, 
-  k_j = 3, ####CHANGE THIS LATER
-  n_j = 30, ####CHANGE THIS LATER
+  k_j, ####CHANGE THIS LATER
+  N, ####CHANGE THIS LATER
   f_c_val ) {
   
   # C  = 2
@@ -391,7 +394,9 @@ mu_values <- function(
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
-                         k_j = k_j, n_j = n_j )
+                         k_j = k_j,
+                         N = N 
+                         )
   
   dfs <- multiple_categories(data = dat_app, 
                              moderator_val  = cat, 
@@ -439,13 +444,13 @@ mu_values <- function(
 
 #smd -- pulled and slightly modified from https://osf.io/e4npa
 
-generate_smd <- function(delta, k, N, Sigma) {
+generate_smd <- function(delta, kj, N, Sigma) {
   
   # make sure delta is a vector
-  delta_vec <- rep(delta, length.out = k)
+  delta_vec <- rep(delta, length.out = kj)
   
   # create Sigma matrix assuming equicorrelation
-  if (!is.matrix(Sigma)) Sigma <- Sigma + diag(1 - Sigma, nrow = k) # cor matrix for 1 study
+  if (!is.matrix(Sigma)) Sigma <- Sigma + diag(1 - Sigma, nrow = kj) # cor matrix for 1 study
   
   # generate numerator of SMD 
   mean_diff <- rmvnorm(n = 1, mean = delta_vec, sigma = (4/N) * Sigma) 
@@ -481,10 +486,10 @@ generate_smd <- function(delta, k, N, Sigma) {
 generate_meta <- function(J, tau_sq, 
                           omega_sq, bal, C,
                          # cor_mu, cor_sd, 
-                          rho, P, sample_sizes, k_j, 
+                          rho, P, sample_sizes, k_j,
                          ### added k_j here for now, but it will probably
                          # be part of sample_sizes so should remove later. 
-                          nj, f_c_val,
+                           f_c_val,
                           return_study_params = FALSE,
                           seed = NULL) {
   
@@ -496,28 +501,28 @@ generate_meta <- function(J, tau_sq,
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
-                         rho = rho, P = P, k_j = k_j, n_j = nj, f_c_val = f_c_val) 
+                         rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val, N = sample_sizes) 
   #####3may need to replace k_j input with sample_sizes later..
   
-  X <- design_matrix(C= C, J= J, bal = bal)
+  X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
   
   Xbeta <- as.numeric(X %*% mu_vector)
   
   study_data <- 
     tibble(
       N = rep(sample_sizes, length.out = J),
-      nj = rep(nj, length.out = J), 
+      kj = rep(k_j, length.out = J), 
     #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
       Sigma = rep(rho, J) ## assume equi-correlation across studies -- 
       #############ask James about this one
     ) %>%
     mutate(
       u_j = rnorm(J, 0, sqrt(tau_sq)),
-      v_ij = map(nj, ~ rnorm(., 0, sqrt(omega_sq))),
+      v_ij = map(kj, ~ rnorm(., 0, sqrt(omega_sq))),
       delta = map2(u_j, v_ij, ~ Xbeta + .x + .y)
      # delta2 = Xbeta + u_j + v_ij, 
     ) %>%
-    select(delta, nj, N, Sigma)
+    select(delta, kj, N, Sigma)
   
   if (return_study_params) return(study_data)
   
@@ -534,9 +539,21 @@ generate_meta <- function(J, tau_sq,
   return(meta_reg_dat)
 }
 
+# test_dat <- tibble(N = rep(200, 12 ), k_j = rep(3, 12) )
+# meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced", C = 4,
+#                                       # cor_mu, cor_sd, 
+#                                       rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j, 
+#                                       ### added k_j here for now, but it will probably
+#                                       # be part of sample_sizes so should remove later. 
+#                                        f_c_val = 5,
+#                                       return_study_params = FALSE,
+#                                       seed = NULL)
+
 # Function for random sampling n rows from dataset
 
 n_ES_empirical <- function(dat, J, with_replacement = TRUE) {
   dat[sample(NROW(dat), size = J, replace = with_replacement),]
 }
 
+# Need to add in estimation, sampling from empirical data set, run_sim functions
+# Also need to add in performance criteria and functions associated with the approximation
