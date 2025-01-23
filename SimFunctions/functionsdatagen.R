@@ -46,7 +46,6 @@ multiple_categories <- function(data= NULL,
     cluster = factor(cluster_id),
     moderator = moderator_val,
     sigma_j_sq = sigma_j_sq_val,
-    sigma_j_sq = sigma_j_sq_val,
     rho = rho_val,
     omega_sq = omega_sq_val, 
     tau_sq = tau_sq_val
@@ -62,15 +61,18 @@ multiple_categories <- function(data= NULL,
   df_num <- q
   
   study_level_data <-  dat |> 
-    group_by(cluster) |>
-    mutate(k_j = n()) |> ungroup()
-
+    group_by(cluster, moderator) |>
+    summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') 
+  
+  study_level_data$tau_sq <- tau_sq_val
+     study_level_data$omega_sq <- omega_sq_val
+     study_level_data$rho <- rho_val
   
   
   by_category <-  study_level_data |> 
     group_by(moderator) |> 
     mutate(
-      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = sigma_j_sq, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) |> 
+      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = mean_var, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) |> 
     summarise(W = sum(w_j),
               E_Vr = 1/W,
               nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
@@ -84,6 +86,9 @@ multiple_categories <- function(data= NULL,
   return(by_category)
   
 }
+
+
+
 
 #  NCP
 ncp <- function(weights, mu_p){
@@ -131,7 +136,6 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   dat <- data.frame(
     cluster = factor(cluster_id),
     moderator = moderator_val,
-    sigma_j_sq = sigma_j_sq_val,
     sigma_j_sq = sigma_j_sq_val,
     rho = rho_val,
     omega_sq = omega_sq_val, 
@@ -299,7 +303,7 @@ design_matrix <- function(C, J, bal, k_j){
   
 }
 
-# design matrix 
+
 mod <- function(C, J, bal, k_j){
   
   
@@ -335,16 +339,28 @@ mod <- function(C, J, bal, k_j){
 
 
 # data for approximation function tests
-dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N) {
+dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = NULL, bal) {
   
-  J_c <- J/C
+  if(!is.null(sigma_j_sq)){
+    sigma_j_sq = sigma_j_sq
+  } 
+  
+  if(!is.null(N) & is.null(sigma_j_sq)){
+    sigma_j_sq = 4 / N
+  }
+    
+  if(bal == "balanced"){
+    
+    J_c <- J/C
+    
+    
+  }
  
   
   dat_approx <- tibble(studyid = c(1:J),
                       # k_j = rep(k_j, J),
                        k_j= k_j,
-                       N = N,
-                       sigma_j_sq = 4 / N, ##### CHANGE THIS LATER
+                       sigma_j_sq = sigma_j_sq, ##### CHANGE THIS LATER
                        omega_sq = rep(omega_sq, J),
                        rho = rep(rho, J),
                        tau_sq = rep(tau_sq, J),
@@ -360,13 +376,15 @@ run_power <- function(C,
                       omega_sq, 
                       rho, 
                       k_j, ####CHANGE THIS LATER
-                      N, ####CHANGE THIS LATER
-                      mu_values
+                      mu_values,
+                      bal,
+                      N = NULL, ####CHANGE THIS LATER
+                      sigma_j_sq = NULL
 ){
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
-                         k_j = k_j, N = N )
+                         k_j = k_j, N = N , sigma_j_sq = sigma_j_sq ,bal = bal)
   
   
   power <-  power_CHE_RVE_study_cat(data = dat_app, 
@@ -393,7 +411,9 @@ mu_values <- function(
   rho, 
   P, 
   k_j, ####CHANGE THIS LATER
-  N, ####CHANGE THIS LATER
+  N = NULL, ####CHANGE THIS LATER
+  sigma_j_sq = NULL,
+  bal,
   f_c_val ) {
   
   # C  = 2
@@ -435,7 +455,9 @@ mu_values <- function(
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
                          k_j = k_j,
-                         N = N 
+                         N = N, 
+                         sigma_j_sq = sigma_j_sq,
+                         bal = bal
                          )
   
   dfs <- multiple_categories(data = dat_app, 
@@ -536,6 +558,7 @@ generate_meta <- function(J, tau_sq,
                          ### added k_j here for now, but it will probably
                          # be part of sample_sizes so should remove later. 
                            f_c_val,
+                         sigma_j_sq = NULL,
                           return_study_params = FALSE,
                           seed = NULL) {
   
@@ -547,7 +570,7 @@ generate_meta <- function(J, tau_sq,
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
-                         rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val, N = sample_sizes) 
+                         rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val, bal =bal,sigma_j_sq = sigma_j_sq ,N = sample_sizes) 
   #####may need to replace k_j input with sample_sizes later..
   
   X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
@@ -680,7 +703,18 @@ generate_meta <- function(J, tau_sq,
 
 
 
-estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_list = list()
+estimate_model <- function(data = NULL,
+                           moderator_val,
+                           cluster_id,
+                           delta, 
+                           delta_var,
+                           es_id,
+                          # formula, 
+                         #  C,  
+                         #  vi,
+                           r= 0.7,
+                           smooth_vi = TRUE, 
+                           control_list = list()
 ){
   
   require(dplyr)
@@ -688,21 +722,44 @@ estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_l
   
   res <- tibble()
   
-  # cluster <- droplevels(as.factor(data$studyid))
-  # vi_list <- split(data$var_g, data$studyid)
-  # 
-  # if (smooth_vi) 
-  #   vi_list <- lapply(vi_list, function(x) rep(mean(x, na.rm = TRUE), 
-  #                                              length(x)))
-  # unlist(vi_list)
   
-  if (smooth_vi) { data <- data |> 
-    group_by(data$studyid) |>
-    mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
+  # if (!is.null(data)) {
+  #   moderator_call <- substitute(moderator_val)
+  #   cluster_call <- substitute(cluster_id)
+  #   delta_call <- substitute(delta)
+  #   delta_var_call <- substitute(delta_var)
+  #   es_id_call <- substitute(es_id)
+  #   
+  #   
+  #   env <- list2env(data, parent = parent.frame())
+  #   
+  #   moderator_val <- eval(moderator_call, env)
+  #   cluster_id <- eval(cluster_call, env)
+  #   delta <- eval(delta_call, env)
+  #   delta_var <- eval(delta_var_call, env)
+  #   es_id <- eval(es_id_call, env)
+  #   
+  # }
+  
+  dat <- data.frame(
+    study_id = cluster_id,
+    moderator = moderator_val,
+    g = delta,
+    vi = delta_var,
+    esid = es_id
+    
+    
+    
+  )
+  
+
+  if (smooth_vi) { dat <- dat |> 
+    group_by(study_id) |>
+    mutate(var_g_j = mean(vi, na.rm = TRUE)) |>
     ungroup()
   }
  
-  
+  C = length(unique(dat$moderator))
   
   # V_list <- 
   #   vcalc(
@@ -716,20 +773,21 @@ estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_l
   
   V_list <- 
     vcalc(
-      vi = data$var_g_j,
-      cluster = data$studyid,
+      vi = var_g_j,
+      cluster = study_id,
       rho = r,
-      obs = data$esid,
-      #  data = data ## do I need this argument?
+      obs = esid,
+      sparse = TRUE,
+        data = dat ## do I need this argument?
       
     )
   
   rma_fit <- 
     purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-      as.formula(formula),
+      g ~ 0 + moderator,
       V = V_list, 
-      random = ~ 1 | studyid / esid,
-      data = data,
+      random = ~ 1 | study_id / esid,
+      data = dat,
       test = "t",
       sparse = TRUE,
       verbose = FALSE,
@@ -738,7 +796,7 @@ estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_l
   
   coef_RVE <-  robust(
     rma_fit, # estimation model above
-    cluster = studyid, # define clusters
+    cluster = study_id, # define clusters
     clubSandwich = TRUE # use CR2 adjustment
   )
   
@@ -763,14 +821,11 @@ estimate_model <- function(data,formula, C,  r= 0.7, smooth_vi = TRUE, control_l
 }
 
 
-##### why are the results different? Probably smooth_vi.. should 
-# 
-# res1 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
-# )
-# res2 <- estimate_model2(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
+
+# res2 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
 # )
 # 
 
 
-# Need to add in estimation, sampling from empirical data set, run_sim functions
+# Need to add sampling from empirical data set, run_sim functions
 # Also need to add in performance criteria and functions associated with the approximation

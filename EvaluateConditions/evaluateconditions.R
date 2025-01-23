@@ -212,6 +212,12 @@ results$f_c_val_lab <- factor(results$f_c_val_lab, levels = c("f = [0, 1]" ,
 results$J_lab <- factor(results$J_lab, levels = c("J = 12", "J = 24",
                                                   "J = 36", "J = 48", 
                                                   "J = 60", "J = 72"))
+
+max(results$max_mu)
+
+### filter max value (1.5 SD) ** J= 12 condition probably. 
+### reducing rho and omega values to two condition possibly.
+
 #### Graphs
 
 # pattern_labs <- c("f = [0, 1]", "f = [0, 1, 2]", "f = [0, 0, 1]", "f = [0, 1, 1]", "f = [0, 1, 2, 3]",
@@ -229,8 +235,31 @@ results$J_lab <- factor(results$J_lab, levels = c("J = 12", "J = 24",
 ### x = power, y= max mu, tau ~ pattern, color = j
 results %>% 
   ggplot(aes(x = as.character(P), y = max_mu, 
-             color = J_lab)) +
-  geom_point(alpha = .5) + 
+             color = J_lab, shape = rho_lab)) +
+  geom_point(alpha = .5, position = position_jitter(width = .3)) + 
+  facet_grid(tau_lab~f_c_val_lab, labeller = label_bquote(rows = tau == . (tau_lab),
+                                                          cols = .(f_c_val_lab))) +
+  labs(
+    x = "Power Level", 
+    y = expression("Max " *mu* " Value"),
+    color = "", shape = ""
+  ) + 
+  theme_bw() +
+  theme(
+    plot.caption=element_text(hjust = 0, size = 10),
+    legend.position= "bottom",
+    panel.spacing.x = unit(5, "mm"), 
+    panel.spacing.y = unit(5, "mm"),
+  )
+
+
+results_test <- results %>% filter( rho_lab == ".5") %>% filter(J_lab  == "J = 36")
+
+
+results_test %>% 
+  ggplot(aes(x = as.character(P), y = max_mu, 
+             color = omega_lab, shape = rho_lab)) +
+  geom_point(alpha = .5, position = position_jitter(width = .3)) + 
   facet_grid(tau_lab~f_c_val_lab, labeller = label_bquote(rows = tau == . (tau_lab),
                                                           cols = .(f_c_val_lab))) +
   labs(
@@ -247,24 +276,24 @@ results %>%
   )
 
 ### x = power, y= max mu, tau ~ pattern, color = j_c
-# results %>% 
-#   ggplot(aes(x = as.character(P), y = max_mu, 
-#              color = J_C_lab)) +
-#   geom_point(alpha = .5) + 
-#   facet_grid(tau_lab~f_c_val_lab, labeller = label_bquote(rows = tau == . (tau_lab),
-#                                                           cols = .(f_c_val_lab))) +
-#   labs(
-#     x = "Power Level", 
-#     y = expression("Max " *mu* " Value"),
-#     color = "", shape = ""
-#   ) + 
-#   theme_bw() +
-#   theme(
-#     plot.caption=element_text(hjust = 0, size = 10),
-#     legend.position= "bottom",
-#     panel.spacing.x = unit(5, "mm"), 
-#     panel.spacing.y = unit(5, "mm"),
-#   )
+results %>%
+  ggplot(aes(x = as.character(P), y = max_mu,
+             color = J_C_lab)) +
+  geom_point(alpha = .5) +
+  facet_grid(tau_lab~f_c_val_lab, labeller = label_bquote(rows = tau == . (tau_lab),
+                                                          cols = .(f_c_val_lab))) +
+  labs(
+    x = "Power Level",
+    y = expression("Max " *mu* " Value"),
+    color = "", shape = ""
+  ) +
+  theme_bw() +
+  theme(
+    plot.caption=element_text(hjust = 0, size = 10),
+    legend.position= "bottom",
+    panel.spacing.x = unit(5, "mm"),
+    panel.spacing.y = unit(5, "mm"),
+  )
 
 
 
