@@ -5,7 +5,9 @@ library(tidyverse)
 source("SimFunctions/functionsdatagen.R")
 
 
-
+# -------------------------------------------------------------
+# Determining which combination of conditions are far-fetched
+# -------------------------------------------------------------
 
 run_mu <- function(
                    J, 
@@ -233,7 +235,7 @@ max(results$max_mu)
 
 
 ### x = power, y= max mu, tau ~ pattern, color = j
-results %>% 
+results |>
   ggplot(aes(x = as.character(P), y = max_mu, 
              color = J_lab, shape = rho_lab)) +
   geom_point(alpha = .5, position = position_jitter(width = .3)) + 
@@ -253,12 +255,12 @@ results %>%
   )
 
 
-results_test <- results %>% filter( rho_lab == ".5") %>% filter(J_lab  == "J = 36")
+results_test <- results |> filter( rho_lab == ".5") |> filter(J_lab  == "J = 36")
 
 
-results_test %>% 
+results_test |>
   ggplot(aes(x = as.character(P), y = max_mu, 
-             color = omega_lab, shape = rho_lab)) +
+             color = omega_lab)) +
   geom_point(alpha = .5, position = position_jitter(width = .3)) + 
   facet_grid(tau_lab~f_c_val_lab, labeller = label_bquote(rows = tau == . (tau_lab),
                                                           cols = .(f_c_val_lab))) +
@@ -276,7 +278,7 @@ results_test %>%
   )
 
 ### x = power, y= max mu, tau ~ pattern, color = j_c
-results %>%
+results |>
   ggplot(aes(x = as.character(P), y = max_mu,
              color = J_C_lab)) +
   geom_point(alpha = .5) +
@@ -298,7 +300,7 @@ results %>%
 
 
 ### x = power, y= max mu, rho ~ pattern, color = J
-  results %>% 
+  results |> 
   ggplot(aes(x = as.character(P), y = max_mu, 
              color = J_lab, 
           
@@ -323,7 +325,7 @@ results %>%
   )
 
   ### x = power, y= max mu, tau ~ omega, color = J
-  results %>% 
+  results |> 
     ggplot(aes(x = as.character(P), y = max_mu, 
                color = J_lab, 
            
@@ -349,4 +351,206 @@ results %>%
       panel.spacing.y = unit(5, "mm"),
     )
   
+  # -------------------------------------------------------------
+  # Empirical Data set 
+  # -------------------------------------------------------------
+  
+  rm(list=ls())
+  library(haven)
+  
+  
+  Diet_dat <- 
+    read_dta("SimFunctions/RER_cluster.dta")
+  
+  
+  
+  Diet_dat  <- Diet_dat  |>
+    mutate(
+      ESS = 4 / SE_g_adj^2
+    ) |>
+    filter(Follow_up == 0) |>
+    group_by(
+      Ref_nr, Authors
+    ) |>
+    summarise(
+      g_avg = mean(Effectsize_g_adj),
+      se_avg = mean(SE_g),
+      se_adj = mean(SE_g_adj),
+      nj = n(),
+      N_ess = as.integer(round(mean(ESS))),
+      N_org = as.integer(round(mean(N_total))),
+      N_diff = N_org - N_ess,
+      .groups = "drop"
+    ) |>
+    mutate(
+      N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
+    ); Diet_dat
+  
+  Diet_dat |>
+    count(N_range)
+  
+  ggplot(Diet_dat, aes(N_ess)) + 
+    geom_histogram() + 
+    scale_x_log10()
+  
+  Diet_dat |>
+    filter(N_ess <= 500) |>
+    ggplot(aes(N_ess)) + 
+    geom_histogram()
+  
+  ggplot(Diet_dat, aes(nj)) + 
+    geom_histogram()
+  
+  ggplot(Diet_dat, aes(nj, N_ess)) + 
+    geom_point() + 
+    scale_y_log10()
+  
+  # Creating dataset used for extracting empirical distributions of nj and N 
+  # for each study 
+  
+  dat_njN <- 
+    Diet_dat |> 
+    select(nj, N = N_ess) |>
+    # Excluding effective sample sizes larger than 500 
+    # and studies with more than 20 outcomes
+    filter(N < 500, nj < 20) |>
+    as.data.frame()
+  
+  range(Diet_dat$nj)
+  length(unique(Diet_dat$Authors))
+#_______________________________________________________________________  
+  load("SimFunctions/refdata_igrm.Rdata")
+  
+  
+  ref_data <- 
+    datafull_igrm2 |> 
+    mutate(
+      ESS = 4 / vi_igrm
+    ) |> 
+    group_by(
+      studyID
+    ) |> 
+    summarise(
+      g_avg = mean(yi_igrm),
+      se_avg = mean(sqrt(vi_igrm)),
+      kj = n(),
+      N_ess = as.integer(round(mean(ESS))),
+      N_org = as.integer(round(mean(total_N))),
+      N_diff = N_org - N_ess,
+      .groups = "drop"
+    ) |> 
+    mutate(
+      N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
+    )
+  
+  ref_data |> 
+    count(N_range)
+  
+  ggplot(ref_data, aes(N_ess)) + 
+    geom_histogram() + 
+    scale_x_log10()
+  
+  ref_data |> 
+    filter(N_ess <= 500) |> 
+    ggplot(aes(N_ess)) + 
+    geom_histogram()
+  
+  ggplot(ref_data, aes(kj)) + 
+    geom_histogram()
+  
+  ggplot(ref_data, aes(kj, N_ess)) + 
+    geom_point() + 
+    scale_y_log10()
+  
+  # Creating dataset used for extracting empirical distributions of nj and N 
+  # for each study 
+  
+  dat_njN <- 
+    ref_data |>  
+    select(kj, N = N_ess) |> 
+    # Excluding effective sample sizes larger than 500 
+    # and studies with more than 20 outcomes
+    filter(N < 500, kj < 20) |> 
+    as.data.frame()
+  
+  length(unique(ref_data$studyID))
+  
+  range(ref_data$kj)
+#________________________________________________________________________
+  
+  erika_dat <- read.csv("SimFunctions/final_dataset.csv")
+  
+#  load("SimFunctions/all_data.Rdata")
+  
+  
+  erika_dat <- erika_dat %>% mutate(
+    
+ 
+    ES12..Control.Post.test.N = ifelse(is.na(ES12..Control.Post.test.N), ES19..Control.N, ES12..Control.Post.test.N),
+    ES23..Intervention.N = ifelse(is.na(ES23..Intervention.N), ES20..Intervention.N, ES23..Intervention.N),
+    ES12..Control.Post.test.N = ifelse(is.na(ES12..Control.Post.test.N), ES9..Total.sample.size/2, ES12..Control.Post.test.N),
+    ES23..Intervention.N = ifelse(is.na(ES23..Intervention.N), ES9..Total.sample.size/2, ES23..Intervention.N),
+    total_N = ES12..Control.Post.test.N + ES23..Intervention.N
+    
+  )
+  
 
+  
+  
+  erika_dat <- 
+    erika_dat |> 
+    mutate(
+      ESS = 4 / igrm_d_v
+    ) |> 
+    group_by(
+      StudyID
+    ) |> 
+    summarise(
+      g_avg = mean(igrm_d),
+      se_avg = mean(sqrt(igrm_d_v)),
+      kj = n(),
+      N_ess = as.integer(round(mean(ESS))),
+      N_org = as.integer(round(mean(total_N))),
+      N_diff = N_org - N_ess,
+      .groups = "drop"
+    ) |> 
+    mutate(
+      N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
+    )
+  
+  erika_dat |> 
+    count(N_range)
+  
+  ggplot(erika_dat, aes(N_ess)) + 
+    geom_histogram() + 
+    scale_x_log10()
+  
+  erika_dat |> 
+    filter(N_ess <= 500) |> 
+    ggplot(aes(N_ess)) + 
+    geom_histogram()
+  
+  ggplot(erika_dat, aes(kj)) + 
+    geom_histogram()
+  
+  ggplot(erika_dat, aes(kj, N_ess)) + 
+    geom_point() + 
+    scale_y_log10()
+  
+  # Creating dataset used for extracting empirical distributions of nj and N 
+  # for each study 
+  
+  dat_njN <- 
+    erika_dat |>  
+    select(kj, N = N_ess) |> 
+    # Excluding effective sample sizes larger than 500 
+    # and studies with more than 20 outcomes
+    filter(N < 500, kj < 20) |> 
+    as.data.frame()
+  
+  range(erika_dat$kj)
+  
+  length(unique(erika_dat$StudyID))
+  
+ # sum(is.na(erika_dat$total_N))
+  

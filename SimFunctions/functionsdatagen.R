@@ -147,7 +147,9 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   
   
   
-  df <- multiple_categories(dat = dat, moderator = moderator, cluster = cluster,sigma_j_sq = sigma_j_sq, rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
+  df <- multiple_categories(dat = dat, moderator = moderator, 
+                            cluster = cluster,sigma_j_sq = sigma_j_sq, 
+                            rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
   
   ncp <-  ncp(weights = df$W, mu_p = mu)
   
@@ -213,7 +215,9 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
     
   }
   
- roots <- uniroot(f = non_central_f_cdf_reverse, d1 = d1, d2 = d2, x = x, area = area, interval = interval,  extendInt = "yes", tol = tol)
+ roots <- uniroot(f = non_central_f_cdf_reverse, d1 = d1, 
+                  d2 = d2, x = x, area = area, interval = interval,  
+                  extendInt = "yes", tol = tol)
   
  return(roots$root)
  
@@ -283,6 +287,15 @@ build_mu <- function(pattern, zeta){
 }
 
 # design matrix 
+
+### options for balance of the number of studies across categories:
+#### 1. set scenarios where each J_c add up a multiple of J = 12
+#### 2. fractions in combination with multiple of J = 12 that result in whole numbers
+#### 3. completely stochastic coming where each category has a probability of getting assigned to a study
+
+#### will go with 2 since we can see what is going on exactly with different combinations of factors. 
+#### constrained to multiples of 12.to compare across bal and unbalanced conditions -- probably need to workshop this more
+
 design_matrix <- function(C, J, bal, k_j){
 
   
@@ -290,11 +303,38 @@ design_matrix <- function(C, J, bal, k_j){
     
     J_c <- J/C
     
+    cat <-   rep(LETTERS[1:C], each = J_c)
+  }
+  
+  if(bal == "unbalanced"){
+    
+    
+    #unbalanced
+    if (C == 2){
+      J_1 <- J*1/4
+      
+      J_2 <- J*3/4
+      
+    }
+    
+    #less unbalanced
+    if (C == 3){
+      J_1 <- J*(1/6)
+      
+      J_2 <- J*(5/12)
+      
+      J_3 <- J*(5/12)
+      
+    }
+    
+    # even less unbalanced 
+
+    
     
   }
   
   #needs to be K x K
-  cat <-   rep(LETTERS[1:C], each = J_c)
+  
   categories <-   data.frame(cat = rep(cat, times = k_j))
   
   X <- model.matrix(~ 0 + cat, categories) 
@@ -370,15 +410,16 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
   return(dat_approx)
 }
 
+# function to get power value given a set of beta coefficients/mu values
 run_power <- function(C, 
                       J, 
                       tau_sq, 
                       omega_sq, 
                       rho, 
-                      k_j, ####CHANGE THIS LATER
+                      k_j, 
                       mu_values,
                       bal,
-                      N = NULL, ####CHANGE THIS LATER
+                      N = NULL, 
                       sigma_j_sq = NULL
 ){
   
@@ -403,15 +444,15 @@ run_power <- function(C,
   
 }
 
+#given conditions get beta coefficients/ mu values
 mu_values <- function(
-    #C, 
   J, 
   tau_sq, 
   omega_sq, 
   rho, 
   P, 
-  k_j, ####CHANGE THIS LATER
-  N = NULL, ####CHANGE THIS LATER
+  k_j,
+  N = NULL, 
   sigma_j_sq = NULL,
   bal,
   f_c_val ) {
@@ -483,7 +524,8 @@ mu_values <- function(
                                  tol = 0.0001)
   
   if(!is.na(lambda)) {
-    zeta_val <- zeta(pattern =  f_c(pattern = f_c_val), lambda = lambda, weights =dfs$W)
+    zeta_val <- zeta(pattern =  f_c(pattern = f_c_val), 
+                     lambda = lambda, weights =dfs$W)
     
     mu_values <- build_mu(pattern =  f_c(pattern = f_c_val), zeta = zeta_val)
     
@@ -504,14 +546,12 @@ mu_values <- function(
 ### probably try to make variable names consistent at some point...
 #-----------------------------------------------------------------------------
 # Function for random sampling n rows from dataset
-
 n_ES_empirical <- function(dat, J, with_replacement = TRUE) {
   dat[sample(NROW(dat), size = J, replace = with_replacement),]
 }
 
 
 #smd -- pulled and slightly modified from https://osf.io/e4npa
-
 generate_smd <- function(delta, k_j, N, Sigma) {
   
   # make sure delta is a vector
@@ -570,8 +610,8 @@ generate_meta <- function(J, tau_sq,
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
-                         rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val, bal =bal,sigma_j_sq = sigma_j_sq ,N = sample_sizes) 
-  #####may need to replace k_j input with sample_sizes later..
+                         rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val,
+                         bal =bal, sigma_j_sq = sigma_j_sq, N = sample_sizes) 
   
   X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
   
@@ -613,12 +653,12 @@ generate_meta <- function(J, tau_sq,
   
   
   meta_reg_dat <- 
-    study_data %>%
+    study_data |>
     mutate(
       smds = pmap(select(., -studyid), generate_smd)
-    ) %>%
-    left_join(mod_data, by = "studyid") %>%
-    select(-delta, -k_j, -N, -Sigma) %>%
+    ) |>
+    left_join(mod_data, by = "studyid") |>
+    select(-delta, -k_j, -N, -Sigma) |>
     unnest(cols = c(smds, X))
   
 
@@ -641,10 +681,9 @@ generate_meta <- function(J, tau_sq,
 
 
 # --------------------------------------------------------------------------
-## maybe fix syntax for new metafor update and add in wald's test
-
-
-
+## Estimate Model -- straightforward we are not looking at mispecification at
+## the moment. Just need to run CHE-RVE model
+# --------------------------------------------------------------------------
 
 
 # estimate_model <- function(data,formula, C, r= 0.7, smooth_vi = TRUE, control_list = list()
@@ -778,7 +817,7 @@ estimate_model <- function(data = NULL,
       rho = r,
       obs = esid,
       sparse = TRUE,
-        data = dat ## do I need this argument?
+      data = dat ## do I need this argument?
       
     )
   
@@ -827,5 +866,5 @@ estimate_model <- function(data = NULL,
 # 
 
 
-# Need to add sampling from empirical data set, run_sim functions
+# Need to add sampling from empirical data set, run_sim functions, unbalanced condition
 # Also need to add in performance criteria and functions associated with the approximation
