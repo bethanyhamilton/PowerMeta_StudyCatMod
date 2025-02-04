@@ -45,7 +45,7 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
                        omega_sq = .05^2,
                        rho = .5, P = .9, 
                        k_j = 3, N = 30, 
-                       f_c_val = 5, 
+                       f_c_val = 3, 
                        #sigma_j_sq = NA,
                        bal ="balanced" )
 mu_vector

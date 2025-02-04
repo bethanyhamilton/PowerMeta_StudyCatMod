@@ -291,7 +291,7 @@ build_mu <- function(pattern, zeta){
 ### options for balance of the number of studies across categories:
 #### 1. set scenarios where each J_c add up a multiple of J = 12
 #### 2. fractions in combination with multiple of J = 12 that result in whole numbers
-#### 3. completely stochastic coming where each category has a probability of getting assigned to a study
+#### 3. stochastic assignment  --  where each category has a probability of getting assigned to a study
 
 #### will go with 2 since we can see what is going on exactly with different combinations of factors. 
 #### constrained to multiples of 12.to compare across bal and unbalanced conditions -- probably need to workshop this more
@@ -411,6 +411,93 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
 }
 
 # function to get power value given a set of beta coefficients/mu values
+power_approximation <- function(C, 
+                      J, 
+                      tau_sq, 
+                      omega_sq, 
+                      rho, 
+                     # k_j, 
+                     # N = NULL, 
+                     # sigma_j_sq = NULL
+                      N_mean = NULL,
+                      k_mean = NULL,
+                      N_dist = NULL,
+                      pilot_data = NULL,
+                      iterations = 1L,
+                      sample_size_method = c("balanced","stylized","empirical"),
+                      mu_values,
+                      bal,
+                     seed = NULL
+                     
+){
+  
+  if (!is.null(seed)) set.seed(seed)
+  N <- list()
+  
+  kjs <- list()
+  
+  # Average sample sizes and number of effect sizes
+  if ("balanced" %in% sample_size_method) {
+    
+    if (is.null(N_mean) | is.null(k_mean)) stop("Must specify values for N_mean and k_mean.")
+    
+    N <- c(N, balanced = N_mean)
+    kjs <- c(kjs, balanced = k_mean)
+  }
+  
+  # Stylized sample size and n ES distributions
+  if ("stylized" %in% sample_size_method) {
+    
+    if (is.null(N_dist) | is.null(k_mean)) stop("Must specify values for sigma2_dist and k_mean.")
+    
+    styled_Ns <- rerun(iterations, pmax(10, rgamma(J, shape = N_dist$estimate[1], rate = N_dist$estimate[2])))
+    styled_kjs <- rerun(iterations, 1 + rpois(J, k_mean - 1))
+    
+    N <- c(N, stylized = styled_Ns)
+    kjs <- c(kjs, stylized = styled_kjs)
+  }
+  
+  # Empirical sample sizes and k ES distributions
+  if ("empirical" %in% sample_size_method) {
+    
+    if (is.null(pilot_data)) stop("Must specify a dataset with pilot_data.")
+    
+    pilot_sample <- rerun(iterations, n_ES_empirical(pilot_data, J))
+    N <- c(N, empirical = map(pilot_sample, ~ .x$N))
+    kjs <- c(kjs, empirical =  map(pilot_sample, ~ .x$kj))
+  }
+  
+  res <- tibble()
+  
+  
+  res_CHE_RVE <- map2_dfr(
+    .x = N, .y = kjs, .f = dat_approx, C=C, 
+    J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho,
+    sigma_j_sq = sigma_j_sq, bal = bal, 
+    .id = "samp_method"
+  )
+  
+  
+  ### Need to fix this -- get sample method in there as well. 
+  res_CHE_RVE <- res_CHE_RVE %>% group_split(samp_method)
+  
+  
+  res <- map(res_CHE_RVE, power_CHE_RVE_study_cat, moderator_val  = cat, 
+             cluster_id = studyid, 
+             sigma_j_sq_val = sigma_j_sq,
+             rho_val = rho,
+             omega_sq_val = omega_sq,
+             tau_sq_val = tau_sq,
+             mu = mu_values, 
+             alpha = .05)
+  
+
+  
+  
+  return(power)
+  
+}
+
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -422,6 +509,9 @@ run_power <- function(C,
                       N = NULL, 
                       sigma_j_sq = NULL
 ){
+  
+
+  
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 

@@ -357,13 +357,13 @@ results |>
   
   rm(list=ls())
   library(haven)
-  
-  
-  Diet_dat <- 
+
+
+  Diet_dat <-
     read_dta("SimFunctions/RER_cluster.dta")
-  
-  
-  
+
+
+
   Diet_dat  <- Diet_dat  |>
     mutate(
       ESS = 4 / SE_g_adj^2
@@ -385,97 +385,99 @@ results |>
     mutate(
       N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
     ); Diet_dat
-  
+
   Diet_dat |>
     count(N_range)
-  
-  ggplot(Diet_dat, aes(N_ess)) + 
-    geom_histogram() + 
+
+  ggplot(Diet_dat, aes(N_ess)) +
+    geom_histogram() +
     scale_x_log10()
-  
+
   Diet_dat |>
     filter(N_ess <= 500) |>
-    ggplot(aes(N_ess)) + 
+    ggplot(aes(N_ess)) +
     geom_histogram()
-  
-  ggplot(Diet_dat, aes(nj)) + 
+
+  ggplot(Diet_dat, aes(nj)) +
     geom_histogram()
-  
-  ggplot(Diet_dat, aes(nj, N_ess)) + 
-    geom_point() + 
+
+  ggplot(Diet_dat, aes(nj, N_ess)) +
+    geom_point() +
     scale_y_log10()
-  
-  # Creating dataset used for extracting empirical distributions of nj and N 
-  # for each study 
-  
-  dat_njN <- 
-    Diet_dat |> 
+
+  # Creating dataset used for extracting empirical distributions of nj and N
+  # for each study
+
+  dat_njN <-
+    Diet_dat |>
     select(nj, N = N_ess) |>
-    # Excluding effective sample sizes larger than 500 
+    # Excluding effective sample sizes larger than 500
     # and studies with more than 20 outcomes
     filter(N < 500, nj < 20) |>
     as.data.frame()
-  
+
   range(Diet_dat$nj)
   length(unique(Diet_dat$Authors))
-#_______________________________________________________________________  
-  load("SimFunctions/refdata_igrm.Rdata")
-  
-  
-  ref_data <- 
-    datafull_igrm2 |> 
-    mutate(
-      ESS = 4 / vi_igrm
-    ) |> 
-    group_by(
-      studyID
-    ) |> 
-    summarise(
-      g_avg = mean(yi_igrm),
-      se_avg = mean(sqrt(vi_igrm)),
-      kj = n(),
-      N_ess = as.integer(round(mean(ESS))),
-      N_org = as.integer(round(mean(total_N))),
-      N_diff = N_org - N_ess,
-      .groups = "drop"
-    ) |> 
-    mutate(
-      N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
-    )
-  
-  ref_data |> 
-    count(N_range)
-  
-  ggplot(ref_data, aes(N_ess)) + 
-    geom_histogram() + 
-    scale_x_log10()
-  
-  ref_data |> 
-    filter(N_ess <= 500) |> 
-    ggplot(aes(N_ess)) + 
-    geom_histogram()
-  
-  ggplot(ref_data, aes(kj)) + 
-    geom_histogram()
-  
-  ggplot(ref_data, aes(kj, N_ess)) + 
-    geom_point() + 
-    scale_y_log10()
-  
-  # Creating dataset used for extracting empirical distributions of nj and N 
-  # for each study 
-  
-  dat_njN <- 
-    ref_data |>  
-    select(kj, N = N_ess) |> 
-    # Excluding effective sample sizes larger than 500 
-    # and studies with more than 20 outcomes
-    filter(N < 500, kj < 20) |> 
-    as.data.frame()
-  
-  length(unique(ref_data$studyID))
-  
-  range(ref_data$kj)
+
+  shape_rate <- MASS::fitdistr(dat_njN$N, "gamma")
+# #_______________________________________________________________________  
+#   load("SimFunctions/refdata_igrm.Rdata")
+#   
+#   
+#   ref_data <- 
+#     datafull_igrm2 |> 
+#     mutate(
+#       ESS = 4 / vi_igrm
+#     ) |> 
+#     group_by(
+#       studyID
+#     ) |> 
+#     summarise(
+#       g_avg = mean(yi_igrm),
+#       se_avg = mean(sqrt(vi_igrm)),
+#       kj = n(),
+#       N_ess = as.integer(round(mean(ESS))),
+#       N_org = as.integer(round(mean(total_N))),
+#       N_diff = N_org - N_ess,
+#       .groups = "drop"
+#     ) |> 
+#     mutate(
+#       N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
+#     )
+#   
+#   ref_data |> 
+#     count(N_range)
+#   
+#   ggplot(ref_data, aes(N_ess)) + 
+#     geom_histogram() + 
+#     scale_x_log10()
+#   
+#   ref_data |> 
+#     filter(N_ess <= 500) |> 
+#     ggplot(aes(N_ess)) + 
+#     geom_histogram()
+#   
+#   ggplot(ref_data, aes(kj)) + 
+#     geom_histogram()
+#   
+#   ggplot(ref_data, aes(kj, N_ess)) + 
+#     geom_point() + 
+#     scale_y_log10()
+#   
+#   # Creating dataset used for extracting empirical distributions of nj and N 
+#   # for each study 
+#   
+#   dat_njN <- 
+#     ref_data |>  
+#     select(kj, N = N_ess) |> 
+#     # Excluding effective sample sizes larger than 500 
+#     # and studies with more than 20 outcomes
+#     filter(N < 500, kj < 20) |> 
+#     as.data.frame()
+#   
+#   length(unique(ref_data$studyID))
+#   
+#   range(ref_data$kj)
 #________________________________________________________________________
   
   erika_dat <- read.csv("SimFunctions/final_dataset.csv")
@@ -550,7 +552,9 @@ results |>
   
   range(erika_dat$kj)
   
-  length(unique(erika_dat$StudyID))
+  length(unique(dat_njN$N))
   
+  
+  shape_rate <- MASS::fitdistr(dat_njN$N, "gamma")
  # sum(is.na(erika_dat$total_N))
   
