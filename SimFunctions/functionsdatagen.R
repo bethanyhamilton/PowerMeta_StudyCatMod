@@ -307,7 +307,7 @@ design_matrix <- function(C, J, bal, k_j){
   }
   
   #J_vec <- J * c(1/6, 5/12, 5/12) rewrite this. 
-  # another scenario -- one big two small 
+
   
   # where the distint number studies matters mu. 
   
@@ -321,36 +321,44 @@ design_matrix <- function(C, J, bal, k_j){
     
     #unbalanced
     if (C == 2){
-      J_1 <- J*1/4
       
-      J_2 <- J*3/4
+      J_vec <- J * c(1/4, 3/4)
+     # J_1 <- J*1/4
+      
+    #  J_2 <- J*3/4
       
     }
     
     #less unbalanced
     if (C == 3){
-      J_1 <- J*(1/6)
       
-      J_2 <- J*(5/12)
+      J_vec <- J * c(1/6, 5/12, 5/12)
       
-      J_3 <- J*(5/12)
+      # J_1 <- J*(1/6)
+      # 
+      # J_2 <- J*(5/12)
+      # 
+      # J_3 <- J*(5/12)
       
     }
     
    
-    
+    # add another scenario for 3 -- one big two small 
     
     
     # another option for 4 categories. 
 
     if (C == 4){
-      J_1 <- J*(1/2)
       
-      J_2 <- J*(1/6)
+      J_vec <- J * c(1/2, 1/6, 1/6, 1/6)
       
-      J_3 <- J*(1/6)
-      
-      J_3 <- J*(1/6)
+      # J_1 <- J*(1/2)
+      # 
+      # J_2 <- J*(1/6)
+      # 
+      # J_3 <- J*(1/6)
+      # 
+      # J_3 <- J*(1/6)
       
     }
     
@@ -458,6 +466,14 @@ power_approximation <- function(C,
                      
 ){
   
+  
+  
+  
+# -----------------------------------------------------
+## sampling methods code below pulled from https://osf.io/gaz9t/  and 
+## incorporated into this study
+# -------------------------------------------------------  
+  
   if (!is.null(seed)) set.seed(seed)
   N <- list()
   
@@ -495,6 +511,8 @@ power_approximation <- function(C,
   }
   
   res <- tibble()
+  
+  # -------------------------------------------------------------
   
   res_CHE_RVE <- map2_dfr(
     .x = N, .y = kjs, .f = run_power, C=C, 
