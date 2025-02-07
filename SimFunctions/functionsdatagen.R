@@ -161,7 +161,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   power <- 1- pf(F_crit, df_num, df_den, ncp = ncp)
   
   
-  power_ncp <- cbind(power, ncp)
+  power_ncp <- data.frame(power, ncp, df_den)
   
   return(power_ncp)
   
@@ -294,19 +294,29 @@ build_mu <- function(pattern, zeta){
 #### 3. stochastic assignment  --  where each category has a probability of getting assigned to a study
 
 #### will go with 2 since we can see what is going on exactly with different combinations of factors. 
-#### constrained to multiples of 12.to compare across bal and unbalanced conditions -- probably need to workshop this more
+#### constrained to multiples of 12.to compare across balanced and unbalanced conditions -- probably need to workshop this more
 
 design_matrix <- function(C, J, bal, k_j){
 
   
-  if(bal == "balanced"){
+  if(bal == "balanced_j"){
     
     J_c <- J/C
     
     cat <-   rep(LETTERS[1:C], each = J_c)
   }
   
-  if(bal == "unbalanced"){
+  #J_vec <- J * c(1/6, 5/12, 5/12) rewrite this. 
+  # another scenario -- one big two small 
+  
+  # where the distint number studies matters mu. 
+  
+  #follow rule -- always increasing in number of studies. smalled number of studies will be on smallest mu. 
+  
+  #vector
+  
+  
+  if(bal == "unbalanced_j"){
     
     
     #unbalanced
@@ -327,8 +337,22 @@ design_matrix <- function(C, J, bal, k_j){
       
     }
     
-    # even less unbalanced 
+   
+    
+    
+    
+    # another option for 4 categories. 
 
+    if (C == 4){
+      J_1 <- J*(1/2)
+      
+      J_2 <- J*(1/6)
+      
+      J_3 <- J*(1/6)
+      
+      J_3 <- J*(1/6)
+      
+    }
     
     
   }
@@ -389,7 +413,7 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
     sigma_j_sq = 4 / N
   }
     
-  if(bal == "balanced"){
+  if(bal == "balanced_j"){
     
     J_c <- J/C
     
@@ -410,6 +434,9 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
   return(dat_approx)
 }
 
+
+
+
 # function to get power value given a set of beta coefficients/mu values
 power_approximation <- function(C, 
                       J, 
@@ -418,14 +445,14 @@ power_approximation <- function(C,
                       rho, 
                      # k_j, 
                      # N = NULL, 
-                     # sigma_j_sq = NULL
+                      sigma_j_sq = NULL,
                       N_mean = NULL,
                       k_mean = NULL,
                       N_dist = NULL,
                       pilot_data = NULL,
                       iterations = 1L,
                       sample_size_method = c("balanced","stylized","empirical"),
-                      mu_values,
+                      mu_vec,
                       bal,
                      seed = NULL
                      
@@ -469,34 +496,22 @@ power_approximation <- function(C,
   
   res <- tibble()
   
-  
   res_CHE_RVE <- map2_dfr(
-    .x = N, .y = kjs, .f = dat_approx, C=C, 
+    .x = N, .y = kjs, .f = run_power, C=C, 
     J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho,
-    sigma_j_sq = sigma_j_sq, bal = bal, 
+    sigma_j_sq = sigma_j_sq, bal = bal, mu_vec =mu_vec,
     .id = "samp_method"
   )
   
+  ## currently only capturing power and ncp. maybe also save degrees of freedom?
   
-  ### Need to fix this -- get sample method in there as well. 
-  res_CHE_RVE <- res_CHE_RVE %>% group_split(samp_method)
-  
-  
-  res <- map(res_CHE_RVE, power_CHE_RVE_study_cat, moderator_val  = cat, 
-             cluster_id = studyid, 
-             sigma_j_sq_val = sigma_j_sq,
-             rho_val = rho,
-             omega_sq_val = omega_sq,
-             tau_sq_val = tau_sq,
-             mu = mu_values, 
-             alpha = .05)
-  
-
-  
-  
-  return(power)
+  return(res_CHE_RVE)
   
 }
+
+
+
+
 
 run_power <- function(C, 
                       J, 
@@ -504,7 +519,7 @@ run_power <- function(C,
                       omega_sq, 
                       rho, 
                       k_j, 
-                      mu_values,
+                      mu_vec,
                       bal,
                       N = NULL, 
                       sigma_j_sq = NULL
@@ -525,7 +540,7 @@ run_power <- function(C,
                                     rho_val = rho,
                                     omega_sq_val = omega_sq,
                                     tau_sq_val = tau_sq,
-                                    mu = mu_values, 
+                                    mu = mu_vec, 
                                     alpha = .05)
   
   
@@ -951,9 +966,27 @@ estimate_model <- function(data = NULL,
 
 
 
+
+
 # res2 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
 # )
 # 
+
+
+#-----------------------------------------------------------
+#### Simulation Driver
+#-----------------------------------------------------------
+
+# library(simhelpers)
+# 
+# run_sim <- bundle_sim(f_generate = generate_meta, 
+#                       f_analyze = estimate_model, 
+#                      # f_summarize = calc_performance,
+#                       reps_name = "iterations", 
+#                       seed_name = "seed",
+#                       summarize_opt_name = NULL)
+# 
+# args(run_sim)
 
 
 # Need to add sampling from empirical data set, run_sim functions, unbalanced condition

@@ -27,7 +27,9 @@ run_mu <- function(
     P = P,
     k_j = k_j,
     N = N,
-    f_c_val = f_c_val
+    f_c_val = f_c_val, 
+    sigma_j_sq = NULL,
+    bal = "balanced_j"
   )
   
   # C  = 2
@@ -362,7 +364,7 @@ results |>
   Diet_dat <-
     read_dta("SimFunctions/RER_cluster.dta")
 
-
+   
 
   Diet_dat  <- Diet_dat  |>
     mutate(
@@ -376,7 +378,7 @@ results |>
       g_avg = mean(Effectsize_g_adj),
       se_avg = mean(SE_g),
       se_adj = mean(SE_g_adj),
-      nj = n(),
+      kj = n(),
       N_ess = as.integer(round(mean(ESS))),
       N_org = as.integer(round(mean(N_total))),
       N_diff = N_org - N_ess,
@@ -398,28 +400,30 @@ results |>
     ggplot(aes(N_ess)) +
     geom_histogram()
 
-  ggplot(Diet_dat, aes(nj)) +
+  ggplot(Diet_dat, aes(kj)) +
     geom_histogram()
 
-  ggplot(Diet_dat, aes(nj, N_ess)) +
+  ggplot(Diet_dat, aes(kj, N_ess)) +
     geom_point() +
     scale_y_log10()
 
-  # Creating dataset used for extracting empirical distributions of nj and N
+  # Creating dataset used for extracting empirical distributions of kj and N
   # for each study
 
-  dat_njN <-
+  dat_kjN <-
     Diet_dat |>
-    select(nj, N = N_ess) |>
+    select(kj, N = N_ess) |>
     # Excluding effective sample sizes larger than 500
     # and studies with more than 20 outcomes
-    filter(N < 500, nj < 20) |>
+    filter(N < 500, kj < 20) |>
     as.data.frame()
 
-  range(Diet_dat$nj)
+  range(Diet_dat$kj)
   length(unique(Diet_dat$Authors))
 
-  shape_rate <- MASS::fitdistr(dat_njN$N, "gamma")
+  shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
+  
+  saveRDS(dat_kjN, "dat_kjN.rds")
 # #_______________________________________________________________________  
 #   load("SimFunctions/refdata_igrm.Rdata")
 #   

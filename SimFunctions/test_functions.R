@@ -47,7 +47,7 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
                        k_j = 3, N = 30, 
                        f_c_val = 3, 
                        #sigma_j_sq = NA,
-                       bal ="balanced" )
+                       bal ="balanced_j" )
 mu_vector
 
 
@@ -59,11 +59,29 @@ run_power(C = 4,
           rho = .5,
           k_j = 3,
           N = 30,
-          bal = "balanced",
+          bal = "balanced_j",
           mu_values= mu_vector)
 
 
+dat_kjN <- readRDS("dat_kjN.rds")
+shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
+
+test <- power_approximation(C = 3, 
+                    J = 12, 
+                    tau_sq = .05^2, 
+                    omega_sq= .05^2, 
+                    rho = 0.5, 
+                    sigma_j_sq = NULL,
+                    N_mean = mean(dat_kjN$N), 
+                    k_mean = mean(dat_kjN$kj),
+                    N_dist = shape_rate, 
+                    pilot_data = dat_kjN, 
+                    iterations = 10,
+                    sample_size_method = c("balanced","stylized","empirical"),
+                    mu_vec = mu_vector,
+                    bal = "balanced_j",
+                    seed = NULL)
 
 #------------------------------------------------------------------------------------
 
@@ -77,7 +95,7 @@ source("SimFunctions/functionsdatagen.R")
 
 sample_empirical_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
 meta_dat <- generate_meta(J = 12, tau_sq = .05^2, 
-                          omega_sq = .05^2, bal = "balanced", C = 4,
+                          omega_sq = .05^2, bal = "balanced_j", C = 4,
                                       # cor_mu, cor_sd,
                                       rho = .5, P = .9, sample_sizes = sample_empirical_dat$N, k_j = sample_empirical_dat$k_j,
                                       ### added k_j here for now, but it will probably
@@ -157,7 +175,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
 
  set.seed(1232024)
  test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
- meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced", C = 4,
+ meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", C = 4,
                           rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
                           f_c_val = 5, return_study_params = FALSE,
                                        seed = NULL)
