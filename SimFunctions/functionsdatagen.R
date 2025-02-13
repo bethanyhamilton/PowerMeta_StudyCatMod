@@ -409,8 +409,10 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
     sigma_j_sq = sigma_j_sq
   } 
   
+  
+  #Change this.... just a place holder for now
   if(!is.null(N) & is.null(sigma_j_sq)){
-    sigma_j_sq = 4 / N
+    sigma_j_sq = sqrt(4 / N)
   }
     
   if(bal == "balanced_j"){
@@ -493,6 +495,8 @@ power_approximation <- function(C,
 # -----------------------------------------------------
 ## sampling methods code below pulled from https://osf.io/gaz9t/  and 
 ## incorporated into this study
+  
+  ### add in sample sigma_j_sq*************************
 # -------------------------------------------------------  
   
   if (!is.null(seed)) set.seed(seed)
@@ -549,7 +553,7 @@ power_approximation <- function(C,
 }
 
 
-# wrapper function 
+
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -999,19 +1003,44 @@ estimate_model <- function(data = NULL,
   res
   
 }
-
-
-
-
-
 # res2 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
 # )
 # 
 
 
 #-----------------------------------------------------------
+#### Simulation performance
+#-----------------------------------------------------------
+
+#### add in est_M, est_V, var_M, var_df for the mu_estimates 
+
+
+# sim_performance <- function(results) {
+#   
+#   require(dplyr)
+#   
+#   results %>%
+#     summarise(
+#       n_sim = n(), 
+#       cnvg = mean(!is.na(p_val)),
+#     #  df1_mean = mean(df1), 
+#     #  df2_mean = mean(df2), 
+#       rej_rate_05 = mean(p_val < 0.05, na.rm = TRUE)
+#     )
+#   
+# }
+# 
+
+# Approximate vs. simulated power
+#### add function that joins the approximation results and sim results and 
+#### find the deviance between the two
+
+
+#-----------------------------------------------------------
 #### Simulation Driver
 #-----------------------------------------------------------
+
+## add in run_sim() and compare to the bundle_sim()
 
 # library(simhelpers)
 # 
@@ -1025,5 +1054,4 @@ estimate_model <- function(data = NULL,
 # args(run_sim)
 
 
-# Need to add sampling from empirical data set, run_sim functions, unbalanced condition
-# Also need to add in performance criteria and functions associated with the approximation
+# Need to add run_sim functions, performance criteria and functions associated with the approximation

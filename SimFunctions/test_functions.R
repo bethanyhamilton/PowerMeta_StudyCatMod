@@ -135,7 +135,7 @@ df_Z <- as.numeric(df[1,5])
 q <- as.numeric(df[1,6])
 C_sep <- constrain_equal(1:4, coefs = coef(fit))
 mu_hat <- coef(fit)
-VR <- vcovCR(fit, type = "CR2") %>% as.matrix()
+VR <- vcovCR(fit, type = "CR2") |> as.matrix()
 
 
 Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_sep %*% mu_hat))
@@ -201,8 +201,17 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  # unbalanced J -- three category
  
- meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
+ mu_vector <- mu_values(J = 24, tau_sq = 0.40^2, 
+                        omega_sq = 0.20^2,
+                        rho = .5, P = .9, 
+                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
+                        f_c_val = 4, 
+                        #sigma_j_sq = NA,
+                        bal ="unbalanced_j" )
+ mu_vector
+ 
+ meta_dat3 <- generate_meta(J = 24, tau_sq = 0.40^2, 
+                            omega_sq = 0.20^2, 
                             bal = "unbalanced_j", C = 3,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
@@ -213,6 +222,44 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  meta_dat3  |>  group_by(category)  |>  tally()
  
  meta_dat3  |>  select(studyid, category) |>  distinct()  |> group_by(category) |> tally()
+ 
+ #smooth variances
+ meta_dat3 <- meta_dat3 |> 
+   group_by(studyid) |>
+   mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
+   ungroup()
+ 
+ 
+ V_list2 <- 
+   vcalc(
+     vi = meta_dat3$var_g_j,
+     cluster = meta_dat3$studyid,
+     rho = 0.5,
+     obs = meta_dat3$esid
+     
+     
+   )
+ 
+ res_comp <- rma.mv(g ~ 0 + category,
+                    V = V_list2, 
+                    random = ~ 1 | studyid / esid,
+                    data = meta_dat3,
+                    test = "t",
+                    sparse = TRUE,
+                    verbose = FALSE
+ )
+ 
+ coef_RVE2 <-  robust(
+   res_comp, # estimation model above
+   cluster = studyid, # define clusters
+   clubSandwich = TRUE # use CR2 adjustment
+ )
+ 
+ wald_test_results2 <- Wald_test((res_comp), 
+                                 constraints = constrain_equal(1:3), 
+                                 vcov =  "CR2")
+ 
+ 
  
  
  # unbalanced J -- two category
@@ -240,6 +287,31 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  
  #mod_val <- mod(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
+ 
+ # sigma_j_q instead of N
+ set.seed(21220252)
+ dat_kjN_samp2 <- sample_n(dat_kjN, 12)
+ 
+ design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp2$kj )
+ design_matrix_ex2
+ 
+ 
+ meta_dat5 <- generate_meta(J = 12, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "unbalanced_j", C = 2,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
+                            k_j = dat_kjN_samp2$kj,
+                            sigma_j_sq = dat_kjN_samp2$se_avg,
+                            f_c_val = 1,
+                            return_study_params = FALSE,
+                            seed = NULL)
+ 
+ head(meta_dat5)
+ meta_dat5 |> group_by(category)  |>  tally()
+ 
+ meta_dat5  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
+ 
+ 
  
  
  #------------------------------------------------------------------------------------ 
