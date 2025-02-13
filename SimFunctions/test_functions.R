@@ -63,7 +63,7 @@ run_power(C = 4,
           mu_values= mu_vector)
 
 
-dat_kjN <- readRDS("dat_kjN.rds")
+dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
 
@@ -89,21 +89,19 @@ test <- power_approximation(C = 3,
 ###         Test generate Meta and Df           ###
 ### ------------------------------------------- ###
 rm(list=ls())
-
 source("SimFunctions/functionsdatagen.R")
 
 
 sample_empirical_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
 meta_dat <- generate_meta(J = 12, tau_sq = .05^2, 
-                          omega_sq = .05^2, bal = "balanced_j", C = 4,
-                                      # cor_mu, cor_sd,
-                                      rho = .5, P = .9, sample_sizes = sample_empirical_dat$N, k_j = sample_empirical_dat$k_j,
-                                      ### added k_j here for now, but it will probably
-                                      # be part of sample_sizes so should remove later.
-                                       f_c_val = 5,
-                                      return_study_params = FALSE,
+                          omega_sq = .05^2, 
+                          bal = "balanced_j", C = 4,
+                                      rho = .5, P = .9, sample_sizes = sample_empirical_dat$N, 
+                                      k_j = sample_empirical_dat$k_j,
+                                      sigma_j_sq = NULL,
+                                      f_c_val = 5,
+                                      return_study_params = TRUE,
                                       seed = NULL)
-
 
 
 
@@ -123,7 +121,7 @@ clubsandwichdf<- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_s
  
 
 ### my function df 
-df  <- multiple_categories(data = meta_dat,
+df  <- multiple_categories_df(data = meta_dat,
                     moderator_val = category,
                     cluster_id = studyid,
                     sigma_j_sq_val = var_g,
@@ -160,9 +158,88 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  ### ------------------------------------------- ###
  ###         Demonstrate generate Meta           ###
  ### ------------------------------------------- ###
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ 
+ # multiple of 12 for number of studies -- unbalanced kj
+ set.seed(2122025)
+ dat_kjN_samp <- sample_n(dat_kjN, 24)
+ 
+ design_matrix_ex <- design_matrix(C = 4, J = 24, bal = "balanced_j",  k_j = dat_kjN_samp$kj )
+ design_matrix_ex
+ 
+ meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "balanced_j", C = 4,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+                            k_j = dat_kjN_samp$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = 5,
+                            return_study_params = TRUE,
+                            seed = NULL)
  
  
+ head(meta_dat2)
  
+ # unbalanced J -- four category
+ 
+ meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "unbalanced_j", C = 4,
+                     
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+                            k_j = dat_kjN_samp$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = 5,
+                            return_study_params = FALSE,
+                            seed = NULL)
+ meta_dat3 |> group_by(category) |>  tally()
+ 
+ meta_dat3|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
+ 
+ 
+ # unbalanced J -- three category
+ 
+ meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "unbalanced_j", C = 3,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+                            k_j = dat_kjN_samp$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = 4,
+                            return_study_params = FALSE,
+                            seed = NULL)
+ meta_dat3  |>  group_by(category)  |>  tally()
+ 
+ meta_dat3  |>  select(studyid, category) |>  distinct()  |> group_by(category) |> tally()
+ 
+ 
+ # unbalanced J -- two category
+ set.seed(21220251)
+ dat_kjN_samp2 <- sample_n(dat_kjN, 12)
+ 
+ design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp2$kj )
+ design_matrix_ex2
+ 
+ 
+ meta_dat4 <- generate_meta(J = 12, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "unbalanced_j", C = 2,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
+                            k_j = dat_kjN_samp2$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = 1,
+                            return_study_params = FALSE,
+                            seed = NULL)
+ 
+ head(meta_dat4)
+ meta_dat4 |> group_by(category)  |>  tally()
+ 
+ meta_dat4  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
+ 
+ 
+ #mod_val <- mod(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
  
  
  #------------------------------------------------------------------------------------ 
@@ -243,11 +320,11 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
 
  
  
-# df_Z <- multiple_categories(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)
+# df_Z <- multiple_categories_df(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)
 # 
 
 
-# multiple_categories <- function(dat, moderator, cluster, fit, d_var , rho){
+# multiple_categories_df <- function(dat, moderator, cluster, fit, d_var , rho){
 #   
 #   c <-  length(coef(fit))
 #   q <-  c-1
@@ -322,7 +399,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
 # data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
 # 
 # 
-# df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
+# df2 <- multiple_categories_df(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
 # 
 # 
 # df_num <- df2$df_num[1]

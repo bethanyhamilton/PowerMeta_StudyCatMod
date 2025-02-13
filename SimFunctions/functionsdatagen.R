@@ -12,7 +12,7 @@ study_level_weights <- function(k_j,sigma_j_sq,
 
 
 # degrees of freedom for moderator with multiple categories
-multiple_categories <- function(data= NULL, 
+multiple_categories_df <- function(data= NULL, 
                                 moderator_val, 
                                 cluster_id, 
                                 sigma_j_sq_val, 
@@ -90,7 +90,7 @@ multiple_categories <- function(data= NULL,
 
 
 
-#  NCP
+# non-centrality parameter -- NCP
 ncp <- function(weights, mu_p){
   
   mu_wavg = sum(weights*(mu_p))/ sum(weights)
@@ -147,7 +147,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   
   
   
-  df <- multiple_categories(dat = dat, moderator = moderator, 
+  df <- multiple_categories_df(dat = dat, moderator = moderator, 
                             cluster = cluster,sigma_j_sq = sigma_j_sq, 
                             rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
   
@@ -172,7 +172,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
 
 
 
-# plug into uniroot 
+# plug into uniroot to get lambda or the non-centrality parameter
 non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
   
   pf(x, d1, d2, ncp = lambda) - area
@@ -295,6 +295,7 @@ build_mu <- function(pattern, zeta){
 
 #### will go with 2 since we can see what is going on exactly with different combinations of factors. 
 #### constrained to multiples of 12.to compare across balanced and unbalanced conditions -- probably need to workshop this more
+#follow rule -- always increasing in number of studies. smaller number of studies will be on smallest mu. 
 
 design_matrix <- function(C, J, bal, k_j){
 
@@ -306,68 +307,39 @@ design_matrix <- function(C, J, bal, k_j){
     cat <-   rep(LETTERS[1:C], each = J_c)
   }
   
-  #J_vec <- J * c(1/6, 5/12, 5/12) rewrite this. 
 
   
-  # where the distint number studies matters mu. 
-  
-  #follow rule -- always increasing in number of studies. smalled number of studies will be on smallest mu. 
-  
-  #vector
-  
-  
+  ##### unbalanced
   if(bal == "unbalanced_j"){
     
-    
-    #unbalanced
     if (C == 2){
-      
       J_vec <- J * c(1/4, 3/4)
-     # J_1 <- J*1/4
-      
-    #  J_2 <- J*3/4
-      
+      cat <-   rep(LETTERS[1:C],  J_vec)
     }
     
-    #less unbalanced
+    # #less unbalanced
+    # if (C == 3){
+    #   
+    #   J_vec <- J * c(1/6, 5/12, 5/12)
+    #   
+    #   
+    # }
+    
     if (C == 3){
-      
-      J_vec <- J * c(1/6, 5/12, 5/12)
-      
-      # J_1 <- J*(1/6)
-      # 
-      # J_2 <- J*(5/12)
-      # 
-      # J_3 <- J*(5/12)
-      
+      J_vec <- J * c(1/4, 1/4, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
     }
-    
-   
-    # add another scenario for 3 -- one big two small 
-    
-    
-    # another option for 4 categories. 
+
 
     if (C == 4){
-      
-      J_vec <- J * c(1/2, 1/6, 1/6, 1/6)
-      
-      # J_1 <- J*(1/2)
-      # 
-      # J_2 <- J*(1/6)
-      # 
-      # J_3 <- J*(1/6)
-      # 
-      # J_3 <- J*(1/6)
-      
+      J_vec <- J * c(1/6, 1/6, 1/6, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
     }
-    
-    
   }
   
-  #needs to be K x K
+  #needs to be K x K 
   
-  categories <-   data.frame(cat = rep(cat, times = k_j))
+  categories <-   data.frame(cat = rep(cat, k_j))
   
   X <- model.matrix(~ 0 + cat, categories) 
   
@@ -375,42 +347,62 @@ design_matrix <- function(C, J, bal, k_j){
   
 }
 
-
+# data set with categorical moderator
 mod <- function(C, J, bal, k_j){
   
   
-  if(bal == "balanced"){
+  if(bal == "balanced_j"){
     
     J_c <- J/C
+    cat <-   rep(LETTERS[1:C], each = J_c)
     
     
+  }
+  
+  ##### unbalanced
+  if(bal == "unbalanced_j"){
+    
+    if (C == 2){
+      J_vec <- J * c(1/4, 3/4)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
+    
+    # #less unbalanced
+    # if (C == 3){
+    #   
+    #   J_vec <- J * c(1/6, 5/12, 5/12)
+    #   
+    #   
+    # }
+    
+    if (C == 3){
+      J_vec <- J * c(1/4, 1/4, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
+    
+    
+    if (C == 4){
+      J_vec <- J * c(1/6, 1/6, 1/6, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
   }
   
   N = sum(k_j)
   
   #needs to be K x K
-  cat <-   rep(LETTERS[1:C], each = J_c)
   
-  covariates <- tibble(category = c(rep(cat, times = k_j)),
-         studyid = as.character(c(rep(c(1:J), times = k_j))),
+  covariates <- tibble(category = c(rep(cat,  k_j)),
+         studyid = as.character(c(rep(c(1:J),  k_j))),
          esid = 1:N)
-  # categories <-   
-  # 
-  # studyid <-   
-  # 
-  # covariates <- as.data.frame(c("categories" = categories, "study_id" = studyid))
-  # 
-#  X <- model.matrix(~ 0 + cat, categories) 
+
   
   return(covariates)
   
 }
 
-#X_val <- design_matrix(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
-#mod_val <- mod(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
 
 
-# data for approximation function tests
+# data set for approximation function tests
 dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = NULL, bal) {
   
   if(!is.null(sigma_j_sq)){
@@ -424,19 +416,48 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
   if(bal == "balanced_j"){
     
     J_c <- J/C
+    cat <-   rep(LETTERS[1:C], each = J_c)
     
     
   }
- 
   
-  dat_approx <- tibble(studyid = c(1:J),
+  ##### unbalanced
+  if(bal == "unbalanced_j"){
+    
+    if (C == 2){
+      J_vec <- J * c(1/4, 3/4)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
+    
+    # #less unbalanced
+    # if (C == 3){
+    #   
+    #   J_vec <- J * c(1/6, 5/12, 5/12)
+    #   
+    #   
+    # }
+    
+    if (C == 3){
+      J_vec <- J * c(1/4, 1/4, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
+    
+    
+    if (C == 4){
+      J_vec <- J * c(1/6, 1/6, 1/6, 1/2)
+      cat <-   rep(LETTERS[1:C],  J_vec)
+    }
+  }
+ 
+
+dat_approx <- tibble(studyid = c(1:J),
                       # k_j = rep(k_j, J),
                        k_j= k_j,
                        sigma_j_sq = sigma_j_sq, ##### CHANGE THIS LATER
                        omega_sq = rep(omega_sq, J),
                        rho = rep(rho, J),
                        tau_sq = rep(tau_sq, J),
-                       cat = rep(LETTERS[1:C], each = J_c)
+                       cat = cat
   )
   
   return(dat_approx)
@@ -528,9 +549,7 @@ power_approximation <- function(C,
 }
 
 
-
-
-
+# wrapper function 
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -624,7 +643,7 @@ mu_values <- function(
                          bal = bal
                          )
   
-  dfs <- multiple_categories(data = dat_app, 
+  dfs <- multiple_categories_df(data = dat_app, 
                              moderator_val  = cat, 
                              cluster_id = studyid, 
                              sigma_j_sq_val = sigma_j_sq,
@@ -774,12 +793,11 @@ generate_meta <- function(J, tau_sq,
   
   # Generate full meta data  -----------------------------------------------
   
-  
   meta_reg_dat <- 
-    study_data |>
-    mutate(
+    study_data |> 
+    {\(.) dplyr::mutate(.,
       smds = pmap(select(., -studyid), generate_smd)
-    ) |>
+    )}() |>
     left_join(mod_data, by = "studyid") |>
     select(-delta, -k_j, -N, -Sigma) |>
     unnest(cols = c(smds, X))
