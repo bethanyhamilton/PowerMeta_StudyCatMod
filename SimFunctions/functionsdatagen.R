@@ -409,10 +409,11 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
     sigma_j_sq = sigma_j_sq
   } 
   
-  
-  #Change this.... just a place holder for now
+
   if(!is.null(N) & is.null(sigma_j_sq)){
-    sigma_j_sq = sqrt(4 / N)
+    sigma_j_sq = 4 / N
+    
+    
   }
     
   if(bal == "balanced_j"){
@@ -1015,21 +1016,24 @@ estimate_model <- function(data = NULL,
 #### add in est_M, est_V, var_M, var_df for the mu_estimates 
 
 
+
+
+
 # sim_performance <- function(results) {
-#   
+# 
 #   require(dplyr)
-#   
+# 
 #   results %>%
 #     summarise(
-#       n_sim = n(), 
+#       n_sim = n(),
 #       cnvg = mean(!is.na(p_val)),
-#     #  df1_mean = mean(df1), 
-#     #  df2_mean = mean(df2), 
+#     #  df1_mean = mean(df1),
+#     #  df2_mean = mean(df2),
 #       rej_rate_05 = mean(p_val < 0.05, na.rm = TRUE)
 #     )
-#   
-# }
 # 
+# }
+
 
 # Approximate vs. simulated power
 #### add function that joins the approximation results and sim results and 

@@ -164,7 +164,9 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  # multiple of 12 for number of studies -- unbalanced kj
  set.seed(2122025)
- dat_kjN_samp <- sample_n(dat_kjN, 24)
+ 
+
+ dat_kjN_samp <- n_ES_empirical(dat_kjN_samp, J = 24, with_replacement = TRUE)
  
  design_matrix_ex <- design_matrix(C = 4, J = 24, bal = "balanced_j",  k_j = dat_kjN_samp$kj )
  design_matrix_ex
@@ -264,7 +266,11 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  # unbalanced J -- two category
  set.seed(21220251)
- dat_kjN_samp2 <- sample_n(dat_kjN, 12)
+ 
+ dat_kjN_samp2 <- n_ES_empirical(dat_kjN_samp, J = 12, with_replacement = TRUE)
+
+ 
+ 
  
  design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp2$kj )
  design_matrix_ex2
@@ -290,7 +296,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  # sigma_j_q instead of N
  set.seed(21220252)
- dat_kjN_samp2 <- sample_n(dat_kjN, 12)
+ dat_kjN_samp2 <- n_ES_empirical(dat_kjN_samp, J = 12, with_replacement = TRUE)
  
  design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp2$kj )
  design_matrix_ex2
