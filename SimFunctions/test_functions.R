@@ -307,7 +307,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
                             bal = "unbalanced_j", C = 2,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
                             k_j = dat_kjN_samp2$kj,
-                            sigma_j_sq = dat_kjN_samp2$se_avg,
+                            sigma_j_sq = dat_kjN_samp2$se_avg^2,
                             f_c_val = 1,
                             return_study_params = FALSE,
                             seed = NULL)
