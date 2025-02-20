@@ -45,13 +45,14 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
                        omega_sq = .05^2,
                        rho = .5, P = .9, 
                        k_j = 3, N = 30, 
-                       f_c_val = 3, 
+                       f_c_val = 5, 
                        #sigma_j_sq = NA,
                        bal ="balanced_j" )
 mu_vector
 
 
 ## see if I get same power as I used to generate mu when I plug in mu values
+## was able to get 0.9 again
 run_power(C = 4,
           J = 12,
           tau_sq = .05^2,
@@ -60,28 +61,50 @@ run_power(C = 4,
           k_j = 3,
           N = 30,
           bal = "balanced_j",
-          mu_values= mu_vector)
+          mu= mu_vector)
 
+
+#--------------------------------------------------
+### ------------------------------------------- ###
+### Test Power Approximation given a set of conditions ###
+### ------------------------------------------- ###
+rm(list=ls())
+source("SimFunctions/functionsdatagen.R")
+set.seed(2202025)
 
 dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
 
-test <- power_approximation(C = 3, 
-                    J = 12, 
-                    tau_sq = .05^2, 
-                    omega_sq= .05^2, 
-                    rho = 0.5, 
+## make my vector
+mu_vector <- mu_values(J = 24, tau_sq = .40^2, 
+                       omega_sq = .10^2,
+                       rho = .8, P = .5, 
+                       k_j = 3, N = 30, 
+                       f_c_val = 5, 
+                       #sigma_j_sq = NA,
+                       bal ="balanced_j" )
+
+test <- power_approximation(C = 4, 
+                    J = 24, 
+                    tau_sq = .40^2, 
+                    omega_sq= .10^2, 
+                    rho = 0.8, 
                     sigma_j_sq = NULL,
                     N_mean = mean(dat_kjN$N), 
                     k_mean = mean(dat_kjN$kj),
                     N_dist = shape_rate, 
-                    pilot_data = dat_kjN, 
+                    pilot_data = dat_kjN_samp, 
                     iterations = 10,
                     sample_size_method = c("balanced","stylized","empirical"),
                     mu_vec = mu_vector,
                     bal = "balanced_j",
                     seed = NULL)
+test
+
+
 
 #------------------------------------------------------------------------------------
 
@@ -100,7 +123,7 @@ meta_dat <- generate_meta(J = 12, tau_sq = .05^2,
                                       k_j = sample_empirical_dat$k_j,
                                       sigma_j_sq = NULL,
                                       f_c_val = 5,
-                                      return_study_params = TRUE,
+                                      return_study_params = FALSE,
                                       seed = NULL)
 
 
@@ -161,12 +184,11 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
  dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
- 
+ set.seed(6535566)
  # multiple of 12 for number of studies -- unbalanced kj
- set.seed(2122025)
- 
 
- dat_kjN_samp <- n_ES_empirical(dat_kjN_samp, J = 24, with_replacement = TRUE)
+
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  
  design_matrix_ex <- design_matrix(C = 4, J = 24, bal = "balanced_j",  k_j = dat_kjN_samp$kj )
  design_matrix_ex
@@ -178,14 +200,23 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
                             f_c_val = 5,
-                            return_study_params = TRUE,
+                            return_study_params = FALSE,
                             seed = NULL)
  
  
  head(meta_dat2)
+ meta_dat2 |> group_by(category) |>  tally()
+ meta_dat2|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
  
  # unbalanced J -- four category
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ set.seed(65436)
+ # multiple of 12 for number of studies -- unbalanced kj
  
+ 
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
                             bal = "unbalanced_j", C = 4,
@@ -318,8 +349,25 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  meta_dat5  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
  
  
+ ### seed with error...the study with 14 effects
+ rm(list=ls())
+ 
+ source("SimFunctions/functionsdatagen.R")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ set.seed(2122025)
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+ meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
+                            omega_sq = .05^2, 
+                            bal = "balanced_j", C = 4,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+                            k_j = dat_kjN_samp$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = 5,
+                            return_study_params = FALSE,
+                            seed = NULL)
  
  
+ head(meta_dat2)
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
  ###         Test  Estimate                      ###
