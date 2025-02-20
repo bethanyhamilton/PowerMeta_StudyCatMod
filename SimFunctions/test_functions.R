@@ -22,21 +22,14 @@ library(mvtnorm)
 ###         Test Power and mu vector            ###
 ### ------------------------------------------- ###
 
-
-# create mu vector
-# dat_approx(C = 3, J = 12, tau_sq = .05^2, 
-#            omega_sq = .05^2, rho = .5, 
-#            k_j = 3,
-#            N = 30, 
-#         #   sigma_j_sq = NA,
-#            bal = "balanced" 
-# )
+## GOAL: see if I get same power as I used to generate mu when I plug in mu values
+## was able to get 0.9 again
 
 rm(list=ls())
 
 source("SimFunctions/functionsdatagen.R")
 
-## make my vector
+## make my mu vector
 mu_vector <- mu_values(J = 12, tau_sq = .05^2, 
                        omega_sq = .05^2,
                        rho = .5, P = .9, 
@@ -47,8 +40,6 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
 mu_vector
 
 
-## see if I get same power as I used to generate mu when I plug in mu values
-## was able to get 0.9 again
 # run_power(C = 4,
 #           J = 12,
 #           tau_sq = .05^2,
@@ -58,6 +49,13 @@ mu_vector
 #           N = 30,
 #           bal = "balanced_j",
 #           mu= mu_vector)
+
+## need to construct the mu to find power, so this function now gets the Power and 
+# f_c_val (pattern) of mu values to make the mu vector. Then it uses the constructed
+# mu vector to find power. It matches up. I needed to do this because later I have a vector
+# of k_j and N values from different sampling methods and I needed the mu vector to change with those
+# values. 
+
 
 run_power(C = 4,
           J = 12,
@@ -72,29 +70,16 @@ run_power(C = 4,
 
 
 
-
-#--------------------------------------------------
-### -------------------------------------------------- ###
-### Test Power Approximation given a set of conditions ###
-### -------------------------------------------------- ###
+### --------------------------------------------------------- ###
+### Demonstrate Power Approximation given a set of conditions ###
+### --------------------------------------------------------- ###
 rm(list=ls())
 source("SimFunctions/functionsdatagen.R")
 set.seed(2202025)
 
 dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
 dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
-
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
-
-
-## make my vector -- need the mu_vector to match the k_j and N
-mu_vector <- mu_values(J = 24, tau_sq = .40^2, 
-                       omega_sq = .10^2,
-                       rho = 0.8, P = .5, 
-                       k_j = 3, N = 30, 
-                       f_c_val = 5, 
-                       #sigma_j_sq = NA,
-                       bal ="balanced_j" )
 
 # test <- power_approximation(C = 4, 
 #                     J = 24, 
@@ -133,8 +118,6 @@ test <- power_approximation(C = 4,
                             seed = NULL)
 test
 
-
-#why is power is small compared to the mu values.. 
 
 
 #------------------------------------------------------------------------------------
@@ -212,11 +195,13 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  ### ------------------------------------------- ###
  ###         Demonstrate generate Meta           ###
  ### ------------------------------------------- ###
+ 
+ # multiple of 12 for number of studies -- unbalanced kj
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
  dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
  set.seed(6535566)
- # multiple of 12 for number of studies -- unbalanced kj
+ 
 
 
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
@@ -239,14 +224,12 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  meta_dat2 |> group_by(category) |>  tally()
  meta_dat2|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
  
- # unbalanced J -- four category
+ #------------------------------------------
+ # unbalanced J -- four category , 24 studies
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
  dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
  set.seed(65436)
- # multiple of 12 for number of studies -- unbalanced kj
- 
- 
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
@@ -262,7 +245,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat3|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
  
- 
+ #------------------------------------------
  # unbalanced J -- three category
  
  mu_vector <- mu_values(J = 24, tau_sq = 0.40^2, 
@@ -287,7 +270,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat3  |>  select(studyid, category) |>  distinct()  |> group_by(category) |> tally()
  
- #smooth variances
+ # just checking if I recapture the tau^2 and omega^2 below
  meta_dat3 <- meta_dat3 |> 
    group_by(studyid) |>
    mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
@@ -312,28 +295,15 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
                     sparse = TRUE,
                     verbose = FALSE
  )
+ res_comp
  
- coef_RVE2 <-  robust(
-   res_comp, # estimation model above
-   cluster = studyid, # define clusters
-   clubSandwich = TRUE # use CR2 adjustment
- )
- 
- wald_test_results2 <- Wald_test((res_comp), 
-                                 constraints = constrain_equal(1:3), 
-                                 vcov =  "CR2")
- 
- 
- 
+ #------------------------------------------
  
  # unbalanced J -- two category
  set.seed(21220251)
  
  dat_kjN_samp2 <- n_ES_empirical(dat_kjN_samp, J = 12, with_replacement = TRUE)
 
- 
- 
- 
  design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp2$kj )
  design_matrix_ex2
  
@@ -354,8 +324,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  meta_dat4  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
  
  
- #mod_val <- mod(C= 4, J= 12, bal = "balanced", k_j = c(3,4,3,5,3,3,3,3,3,3,3,3))
- 
+ #------------------------------------------
  # sigma_j_q instead of N
  set.seed(21220252)
  dat_kjN_samp2 <- n_ES_empirical(dat_kjN_samp, J = 12, with_replacement = TRUE)
@@ -378,7 +347,10 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  meta_dat5 |> group_by(category)  |>  tally()
  
  meta_dat5  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
+ #------------------------------------------
  
+ #### this seed resulted in an error. Some combination of k_j and N result in 
+ #### a error in cov_mat object
  
  ### seed with error...the study with 14 effects
  ## k_j=14, N= 6, Sigma = .5
@@ -414,6 +386,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
 
  set.seed(1232024)
+ 
  test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
  meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", C = 4,
                           rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
@@ -475,9 +448,15 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
                                 constraints = constrain_equal(1:4), 
                                 vcov =  "CR2")
  
+
  
+ rownames(coef_RVE2$beta) <- NULL
+ metafor_output <- coef_RVE2$beta[1:4, 1]
+
+ myfunc_output <- unlist(test_output$est) 
+
  
- all.equal(test_output$est, list(coef_RVE2$beta))
+ all.equal(my_output,metafor_output)
  all.equal(test_output$est_var, list(coef_RVE2$se^2))
  
 
