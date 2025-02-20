@@ -1,12 +1,8 @@
-#rm(list=ls())
-
-
 library(tidyverse)
 library(metafor)
 library(clubSandwich)
 library(mvtnorm)
 
-#source("SimFunctions/functionsdatagen.R")
 
 #######Parameters 
 # J = number of studies
@@ -53,6 +49,16 @@ mu_vector
 
 ## see if I get same power as I used to generate mu when I plug in mu values
 ## was able to get 0.9 again
+# run_power(C = 4,
+#           J = 12,
+#           tau_sq = .05^2,
+#           omega_sq = .05^2,
+#           rho = .5,
+#           k_j = 3,
+#           N = 30,
+#           bal = "balanced_j",
+#           mu= mu_vector)
+
 run_power(C = 4,
           J = 12,
           tau_sq = .05^2,
@@ -61,13 +67,16 @@ run_power(C = 4,
           k_j = 3,
           N = 30,
           bal = "balanced_j",
-          mu= mu_vector)
+          P = .9, 
+          f_c_val = 5)
+
+
 
 
 #--------------------------------------------------
-### ------------------------------------------- ###
+### -------------------------------------------------- ###
 ### Test Power Approximation given a set of conditions ###
-### ------------------------------------------- ###
+### -------------------------------------------------- ###
 rm(list=ls())
 source("SimFunctions/functionsdatagen.R")
 set.seed(2202025)
@@ -78,32 +87,54 @@ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
 
-## make my vector
+## make my vector -- need the mu_vector to match the k_j and N
 mu_vector <- mu_values(J = 24, tau_sq = .40^2, 
                        omega_sq = .10^2,
-                       rho = .8, P = .5, 
+                       rho = 0.8, P = .5, 
                        k_j = 3, N = 30, 
                        f_c_val = 5, 
                        #sigma_j_sq = NA,
                        bal ="balanced_j" )
 
+# test <- power_approximation(C = 4, 
+#                     J = 24, 
+#                     tau_sq = .40^2, 
+#                     omega_sq= .10^2, 
+#                     rho = 0.8, 
+#                     sigma_j_sq = NULL,
+#                     N_mean = mean(dat_kjN$N), 
+#                     k_mean = mean(dat_kjN$kj),
+#                     N_dist = shape_rate, 
+#                     pilot_data = dat_kjN_samp, 
+#                     iterations = 10,
+#                     sample_size_method = c("balanced","stylized","empirical"),
+#                     mu_vec = mu_vector,
+#                     bal = "balanced_j",
+#                     seed = NULL)
+# test
+
+
 test <- power_approximation(C = 4, 
-                    J = 24, 
-                    tau_sq = .40^2, 
-                    omega_sq= .10^2, 
-                    rho = 0.8, 
-                    sigma_j_sq = NULL,
-                    N_mean = mean(dat_kjN$N), 
-                    k_mean = mean(dat_kjN$kj),
-                    N_dist = shape_rate, 
-                    pilot_data = dat_kjN_samp, 
-                    iterations = 10,
-                    sample_size_method = c("balanced","stylized","empirical"),
-                    mu_vec = mu_vector,
-                    bal = "balanced_j",
-                    seed = NULL)
+                            J = 24, 
+                            tau_sq = .40^2, 
+                            omega_sq= .10^2, 
+                            rho = 0.8, 
+                            sigma_j_sq = NULL,
+                            N_mean = mean(dat_kjN$N), 
+                            k_mean = mean(dat_kjN$kj),
+                            N_dist = shape_rate, 
+                            pilot_data = dat_kjN_samp, 
+                            iterations = 10,
+                            sample_size_method = c("balanced","stylized","empirical"),
+                            #mu_vec = mu_vector,
+                            P = .5,
+                            f_c_val = 5,
+                            bal = "balanced_j",
+                            seed = NULL)
 test
 
+
+#why is power is small compared to the mu values.. 
 
 
 #------------------------------------------------------------------------------------
@@ -350,6 +381,10 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  
  ### seed with error...the study with 14 effects
+ ## k_j=14, N= 6, Sigma = .5
+ #Sigma <- Sigma + diag(1 - Sigma, nrow = k_j)
+ #cov_mat <- as.matrix(rWishart(n = 1, df = N - 2, Sigma = Sigma)[,,1])
+
  rm(list=ls())
  
  source("SimFunctions/functionsdatagen.R")
@@ -368,6 +403,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  
  head(meta_dat2)
+ 
+
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
  ###         Test  Estimate                      ###

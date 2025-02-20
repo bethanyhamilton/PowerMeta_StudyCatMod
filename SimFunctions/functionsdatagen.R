@@ -484,7 +484,11 @@ power_approximation <- function(C,
                       pilot_data = NULL,
                       iterations = 1L,
                       sample_size_method = c("balanced","stylized","empirical"),
-                      mu_vec,
+                     #  mu_vec,
+                     P, ## replaces mu_vec. need to add this to generate mu then we see if it matches at the end..
+                     ## need to add mu in this function so it can match up with sampling method
+                     f_c_val, ### added this to replace mu_vec too. 
+                     
                       bal,
                      seed = NULL
                      
@@ -540,10 +544,17 @@ power_approximation <- function(C,
   
   # -------------------------------------------------------------
   
+  # res_CHE_RVE <- map2_dfr(
+  #   .x = N, .y = kjs, .f = run_power, C=C,
+  #   J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho,
+  #   sigma_j_sq = sigma_j_sq, bal = bal, mu_vec =mu_vec,
+  #   .id = "samp_method"
+  # )
+  
   res_CHE_RVE <- map2_dfr(
-    .x = N, .y = kjs, .f = run_power, C=C, 
+    .x = N, .y = kjs, .f = run_power, C=C,
     J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho,
-    sigma_j_sq = sigma_j_sq, bal = bal, mu_vec =mu_vec,
+    sigma_j_sq = sigma_j_sq, bal = bal, P =P, f_c_val = f_c_val,
     .id = "samp_method"
   )
   
@@ -561,14 +572,23 @@ run_power <- function(C,
                       omega_sq, 
                       rho, 
                       k_j, 
-                      mu_vec,
+                    #  mu_vec,
+                      P, ## need to add this to generate mu then we see if it matches at the end..
+                         ## need to add mu in this function so it can match up with sampling method
+                      f_c_val,
                       bal,
                       N = NULL, 
                       sigma_j_sq = NULL
 ){
   
 
-  
+  mu_vec <- mu_values(J = J, tau_sq = tau_sq, 
+                      omega_sq = omega_sq,
+                      rho = rho, P = P, 
+                      k_j = k_j, N = N, 
+                      f_c_val = f_c_val, 
+                      #sigma_j_sq = NA,
+                      bal ="balanced_j" )
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
