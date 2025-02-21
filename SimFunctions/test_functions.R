@@ -356,7 +356,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  #------------------------------------------
  
  #### this seed resulted in an error. Some combination of k_j and N result in 
- #### a error in cov_mat object
+ #### an error in cov_mat object
  
  ### seed with error...the study with 14 effects
  ## k_j=14, N= 6, Sigma = .5
@@ -364,7 +364,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  #cov_mat <- as.matrix(rWishart(n = 1, df = N - 2, Sigma = Sigma)[,,1])
  
  #Solution: df >= dimension
- #NEED TO PREPROCESS DATA SO  N >= kj 
+ #NEED TO PREPROCESS DATA SO  N >= kj + 2
 
  rm(list=ls())
  
@@ -484,7 +484,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  
  ## need to test with different empirical data set that has SE
- ## also should capture the mu_values that part of the data generation. 
+ ## also should capture the mu_values from the data generation. 
 
  dat_kjN <- readRDS("SimFunctions/dat_kjN_Diet_dat.rds")
  
