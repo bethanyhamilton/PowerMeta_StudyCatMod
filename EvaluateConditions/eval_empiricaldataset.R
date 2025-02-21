@@ -68,7 +68,7 @@ length(unique(Diet_dat$Authors))
 
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
-saveRDS(dat_kjN, "dat_kjN.rds")
+saveRDS(dat_kjN, "SimFunctions/dat_kjN_Diet_dat.rds")
 # #_______________________________________________________________________  
 #   load("SimFunctions/refdata_igrm.Rdata")
 #   
@@ -211,7 +211,7 @@ range(erika_dat$kj)
 
 length(unique(dat_kjN$N))
 
-saveRDS(dat_kjN, "SimFunctions/dat_kjN.rds")
+saveRDS(dat_kjN, "SimFunctions/dat_kjN_erikadat.rds")
 
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 

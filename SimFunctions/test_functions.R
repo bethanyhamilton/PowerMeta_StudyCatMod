@@ -77,7 +77,7 @@ rm(list=ls())
 source("SimFunctions/functionsdatagen.R")
 set.seed(2202025)
 
-dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
 dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
@@ -200,7 +200,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  # multiple of 12 for number of studies -- unbalanced kj
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
  set.seed(6535566)
  
 
@@ -230,7 +230,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  # unbalanced J -- four category , 24 studies
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
  set.seed(65436)
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
@@ -362,13 +362,19 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  ## k_j=14, N= 6, Sigma = .5
  #Sigma <- Sigma + diag(1 - Sigma, nrow = k_j)
  #cov_mat <- as.matrix(rWishart(n = 1, df = N - 2, Sigma = Sigma)[,,1])
+ 
+ #Solution: df >= dimension
+ #NEED TO PREPROCESS DATA SO  N >= kj 
 
  rm(list=ls())
  
+ ## df greater kj 
  source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
  set.seed(2122025)
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+ 
+ dat_kjN_samp <- dat_kjN_samp |>  filter(kj == 12)
  meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
                             bal = "balanced_j", 
@@ -380,7 +386,7 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
                             return_study_params = FALSE,
                             seed = NULL)
  
- 
+
  head(meta_dat2)
  
 
@@ -478,7 +484,9 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  
  ## need to test with different empirical data set that has SE
- dat_kjN <- readRDS("dat_kjN.rds")
+ ## also should capture the mu_values that part of the data generation. 
+
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_Diet_dat.rds")
  
  test <- run_sim(iterations = 1, 
                  J = 24, tau_sq = .05^2, 

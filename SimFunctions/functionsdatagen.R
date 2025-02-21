@@ -523,8 +523,8 @@ power_approximation <- function(C,
     
     if (is.null(N_dist) | is.null(k_mean)) stop("Must specify values for sigma2_dist and k_mean.")
     
-    styled_Ns <- rerun(iterations, pmax(10, rgamma(J, shape = N_dist$estimate[1], rate = N_dist$estimate[2])))
-    styled_kjs <- rerun(iterations, 1 + rpois(J, k_mean - 1))
+    styled_Ns <- map(1:iterations, ~pmax(10, rgamma(J, shape = N_dist$estimate[1], rate = N_dist$estimate[2])))
+    styled_kjs <- map(1:iterations, ~ 1 + rpois(J, k_mean - 1))
     
     N <- c(N, stylized = styled_Ns)
     kjs <- c(kjs, stylized = styled_kjs)
@@ -535,7 +535,7 @@ power_approximation <- function(C,
     
     if (is.null(pilot_data)) stop("Must specify a dataset with pilot_data.")
     
-    pilot_sample <- rerun(iterations, n_ES_empirical(pilot_data, J))
+    pilot_sample <- map(1:iterations, ~ n_ES_empirical(pilot_data, J))
     N <- c(N, empirical = map(pilot_sample, ~ .x$N))
     kjs <- c(kjs, empirical =  map(pilot_sample, ~ .x$kj))
   }
@@ -1134,7 +1134,7 @@ run_sim <- function(iterations,
 
  if (!is.null(seed)) set.seed(seed)
  
- results <- rerun(iterations, {
+ results <- map(iterations, ~{
    
                   sample_dat <- n_ES_empirical(pilot_data, J = J)
                   
