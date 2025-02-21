@@ -132,7 +132,8 @@ source("SimFunctions/functionsdatagen.R")
 sample_empirical_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
 meta_dat <- generate_meta(J = 12, tau_sq = .05^2, 
                           omega_sq = .05^2, 
-                          bal = "balanced_j", C = 4,
+                          bal = "balanced_j", 
+                          #C = 4,
                                       rho = .5, P = .9, sample_sizes = sample_empirical_dat$N, 
                                       k_j = sample_empirical_dat$k_j,
                                       sigma_j_sq = NULL,
@@ -211,7 +212,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
-                            bal = "balanced_j", C = 4,
+                            bal = "balanced_j", 
+                            #C = 4,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
@@ -233,7 +235,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
-                            bal = "unbalanced_j", C = 4,
+                            bal = "unbalanced_j", 
+                            #C = 4,
                      
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
@@ -259,7 +262,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat3 <- generate_meta(J = 24, tau_sq = 0.40^2, 
                             omega_sq = 0.20^2, 
-                            bal = "unbalanced_j", C = 3,
+                            bal = "unbalanced_j", 
+                            #C = 3,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
@@ -310,7 +314,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat4 <- generate_meta(J = 12, tau_sq = .05^2, 
                             omega_sq = .05^2, 
-                            bal = "unbalanced_j", C = 2,
+                            bal = "unbalanced_j",
+                            #C = 2,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
                             k_j = dat_kjN_samp2$kj,
                             sigma_j_sq = NULL,
@@ -335,7 +340,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  
  meta_dat5 <- generate_meta(J = 12, tau_sq = .05^2, 
                             omega_sq = .05^2, 
-                            bal = "unbalanced_j", C = 2,
+                            bal = "unbalanced_j", 
+                            #C = 2,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
                             k_j = dat_kjN_samp2$kj,
                             sigma_j_sq = dat_kjN_samp2$se_avg^2,
@@ -365,7 +371,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
                             omega_sq = .05^2, 
-                            bal = "balanced_j", C = 4,
+                            bal = "balanced_j", 
+                            #C = 4,
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
@@ -388,7 +395,8 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  set.seed(1232024)
  
  test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
- meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", C = 4,
+ meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", 
+                           #C = 4,
                           rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
                           f_c_val = 5, return_study_params = FALSE,
                                        seed = NULL)
@@ -456,10 +464,46 @@ Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_
  myfunc_output <- unlist(test_output$est) 
 
  
- all.equal(my_output,metafor_output)
+ all.equal(myfunc_output,metafor_output)
  all.equal(test_output$est_var, list(coef_RVE2$se^2))
  
-
+ 
+ #------------------------------------------------------------------------------------ 
+ ### ------------------------------------------- ###
+ ###         Demonstrate  run_sim                ###
+ ### ------------------------------------------- ### 
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ #dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
+ 
+ 
+ ## need to test with different empirical data set that has SE
+ dat_kjN <- readRDS("dat_kjN.rds")
+ 
+ test <- run_sim(iterations = 1, 
+                 J = 24, tau_sq = .05^2, 
+                 omega_sq = .05^2, 
+                 bal = "balanced_j", 
+                 rho = .5, P = .9, 
+                 f_c_val = 5,
+                 sigma_j_sq_inc = FALSE,
+                 pilot_data = dat_kjN, 
+                 return_study_params = FALSE,
+                 seed = NULL,
+                 summarize_results = FALSE)
+ 
+ tm1 <- system.time(test <- run_sim(iterations = 1, 
+                                    J = 24, tau_sq = .05^2, 
+                                    omega_sq = .05^2, 
+                                    bal = "balanced_j", 
+                                    rho = .5, P = .9, 
+                                    f_c_val = 5,
+                                    sigma_j_sq_inc = FALSE,
+                                    pilot_data = dat_kjN, 
+                                    return_study_params = FALSE,
+                                    seed = NULL,
+                                    summarize_results = FALSE))
+ 
  
  
 # df_Z <- multiple_categories_df(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)

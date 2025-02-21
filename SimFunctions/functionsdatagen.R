@@ -611,18 +611,7 @@ run_power <- function(C,
   
 }
 
-#given conditions get beta coefficients/ mu values
-mu_values <- function(
-  J, 
-  tau_sq, 
-  omega_sq, 
-  rho, 
-  P, 
-  k_j,
-  N = NULL, 
-  sigma_j_sq = NULL,
-  bal,
-  f_c_val ) {
+ftoc <- function(f_c_val){
   
   # C  = 2
   if(f_c_val == 1){
@@ -658,6 +647,62 @@ mu_values <- function(
   if(f_c_val == 8){
     C= 4
   }
+  
+  return(C)
+  
+}
+
+
+#given conditions get beta coefficients/ mu values
+mu_values <- function(
+  J, 
+  tau_sq, 
+  omega_sq, 
+  rho, 
+  P, 
+  k_j,
+  N = NULL, 
+  sigma_j_sq = NULL,
+  bal,
+  f_c_val ) {
+  
+  
+  C <-  ftoc(f_c_val)
+  
+  # C  = 2
+  # if(f_c_val == 1){
+  #   C= 2
+  # }
+  # 
+  # # C  = 3
+  # if(f_c_val == 2){
+  #   C= 3
+  # }
+  # 
+  # if(f_c_val == 3){
+  #   C= 3
+  # }
+  # 
+  # if(f_c_val == 4){
+  #   C= 3
+  # }
+  # 
+  # # C  = 4
+  # if(f_c_val == 5){
+  #   C= 4
+  # }
+  # 
+  # if(f_c_val == 6){
+  #   C= 4
+  # }
+  # 
+  # if(f_c_val == 7){
+  #   C= 4
+  # }
+  # 
+  # if(f_c_val == 8){
+  #   C= 4
+  # }
   
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
@@ -759,7 +804,8 @@ generate_smd <- function(delta, k_j, N, Sigma) {
 #-----------------------------------------------------------------------------  
 
 generate_meta <- function(J, tau_sq, 
-                          omega_sq, bal, C,
+                          omega_sq, bal, 
+                         # C,
                          # cor_mu, cor_sd, 
                           rho, P, sample_sizes, k_j,
                          ### added k_j here for now, but it will probably
@@ -774,6 +820,8 @@ generate_meta <- function(J, tau_sq,
   if (!is.null(seed)) set.seed(seed)
   
   # Study data --------------------------------------------------------------
+  
+  C <-  ftoc(f_c_val)
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
@@ -1063,6 +1111,84 @@ estimate_model <- function(data = NULL,
 #-----------------------------------------------------------
 #### Simulation Driver
 #-----------------------------------------------------------
+
+run_sim <- function(iterations,
+                    J, 
+                    tau_sq, 
+                    omega_sq, 
+                    bal, 
+                    #C,
+                    # cor_mu, cor_sd, 
+                    rho, 
+                    P, 
+                    f_c_val,
+                  # sample_sizes, 
+                  #  k_j,
+                    sigma_j_sq_inc = NULL,
+                    pilot_data = NULL,
+                    return_study_params = FALSE,
+                    seed = NULL,
+                    summarize_results = FALSE){
+  
+  # get number of categories
+
+ if (!is.null(seed)) set.seed(seed)
+ 
+ results <- rerun(iterations, {
+   
+                  sample_dat <- n_ES_empirical(pilot_data, J = J)
+                  
+                  ## NOTE make sure empirical dat has SE and not Var or CHANGE THIS. 
+                  if(sigma_j_sq_inc == TRUE){
+                    sigma_j_sq = sample_dat$se_avg^2
+                  } else{
+                    sigma_j_sq = NULL
+                  }
+                  
+                  
+                  dat <- generate_meta(J = J, 
+                                       tau_sq = tau_sq, 
+                                       omega_sq = omega_sq, 
+                                       bal = bal, 
+                                     #  C = C,
+                                     # cor_mu, cor_sd, 
+                                       rho = rho, 
+                                       P = P, 
+                                       sample_sizes = sample_dat$N, 
+                                       k_j = sample_dat$kj,
+                                                   ### added k_j here for now, but it will probably
+                                                   # be part of sample_sizes so should remove later. 
+                                       f_c_val = f_c_val,
+                                       sigma_j_sq = sigma_j_sq,
+                                       return_study_params = return_study_params,
+                                       seed = seed ## maybe should remove this here and only keep in run_sim
+                                     )
+                  
+              
+                  est_res <-  estimate_model(data = dat,
+                                             moderator_val = dat$category,
+                                             cluster_id = dat$studyid,
+                                             delta = dat$g, 
+                                             delta_var =  dat$var_g,
+                                             es_id = dat$esid,
+                                             # formula, 
+                                             #  C,  
+                                             #  vi,
+                                             r= rho,
+                                             smooth_vi = TRUE, 
+                                             control_list = list()
+                  )
+                  
+                  }) |> dplyr::bind_rows()
+  
+ if (summarize_results) {
+   performance <- sim_performance(results = results)
+   return(performance)
+ } else {
+   return(results)
+ }
+}
+
 
 ## add in run_sim() and compare to the bundle_sim()
 
