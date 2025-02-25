@@ -78,6 +78,10 @@ multiple_categories_df <- function(data= NULL,
               nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
   
   
+  # JEP: It seems like this function should just return
+  # nu_D and df_num as single values because they apply 
+  # to the test of equality across categories rather than to
+  # specific levels of the moderator
   
   by_category$nu_D <- (q*(q+1)) / (2*(sum( (1/by_category$nu_Vr)* (1-(1/(by_category$E_Vr*sum(by_category$W))))^2 )))
   by_category$df_num = df_num
@@ -205,14 +209,16 @@ non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
 
 # find lambda (NCP)
 
+# JEP: Does this function need the lambda argument?
+# It seems like lambda is the output, not an input.
+
 find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
   
   
   # needed to add this since mu should be 0 in this case since it is equal to
   # type I error of .05 (we are only looking at that condition)
-  if(area == 0.95){
+  if (area == 0.95) {
     return(0)
-    
   }
   
  roots <- uniroot(f = non_central_f_cdf_reverse, d1 = d1, 
@@ -223,9 +229,17 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
  
 }
 
+# JEP: Could write this more efficiently as a list, e.g.,
+# f_c <- list(
+#   P1 = c(0,1),
+#   P2 = c(0,1,2),
+#   etc.
+# )
+# Then evaluate as
+# f_c[[pattern]]
 
 # patterns of the beta_coefficients
-f_c <- function(pattern){
+f_c <- function(pattern) {
   
   # C  = 2
   if(pattern == 1){
@@ -267,10 +281,6 @@ f_c <- function(pattern){
 
 
 
-
-
-
-
 # find the scaling factor
 zeta <- function(pattern, lambda, weights){
   
@@ -280,6 +290,7 @@ zeta <- function(pattern, lambda, weights){
 }
 
 # beta coefficients 
+# JEP: Does this need to be its own separate function?
 build_mu <- function(pattern, zeta){
   
   pattern*zeta
@@ -297,6 +308,9 @@ build_mu <- function(pattern, zeta){
 #### constrained to multiples of 12.to compare across balanced and unbalanced conditions -- probably need to workshop this more
 #follow rule -- always increasing in number of studies. smaller number of studies will be on smallest mu. 
 
+# JEP: This function has a lot of redundancy with mod() below.
+# Do you really need both? If so, then consider refactoring 
+# design_matrix() to call mod() and then call model.matrix() on the result.
 design_matrix <- function(C, J, bal, k_j){
 
   
@@ -401,10 +415,13 @@ mod <- function(C, J, bal, k_j){
 }
 
 
+# JEP: This seems like it also has a lot of redundancy with mod(). 
+# Consider calling mod() instead of repeating the same code. 
 
 # data set for approximation function tests
 dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = NULL, bal) {
   
+  # JEP: This conditional isn't needed.
   if(!is.null(sigma_j_sq)){
     sigma_j_sq = sigma_j_sq
   } 
@@ -565,7 +582,7 @@ power_approximation <- function(C,
 }
 
 
-
+# JEP: Do you actually need this function?
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -611,7 +628,11 @@ run_power <- function(C,
   
 }
 
-ftoc <- function(f_c_val){
+
+# JEP: As with f_c() above, you could implement this more
+# simply with a list (or even a named vector).
+
+ftoc <- function(f_c_val) {
   
   # C  = 2
   if(f_c_val == 1){
@@ -1006,10 +1027,12 @@ estimate_model <- function(data = NULL,
   )
   
 
-  if (smooth_vi) { dat <- dat |> 
-    group_by(study_id) |>
-    mutate(var_g_j = mean(vi, na.rm = TRUE)) |>
-    ungroup()
+  if (smooth_vi) { 
+    dat <- 
+      dat |> 
+      group_by(study_id) |>
+      mutate(var_g_j = mean(vi, na.rm = TRUE)) |>
+      ungroup()
   }
  
   C = length(unique(dat$moderator))
@@ -1031,8 +1054,7 @@ estimate_model <- function(data = NULL,
       rho = r,
       obs = esid,
       sparse = TRUE,
-      data = dat ## do I need this argument?
-      
+      data = dat ## do I need this argument? JEP: I think so.
     )
   
   rma_fit <- 
