@@ -49,38 +49,43 @@ multiple_categories_df <- function(data= NULL,
     rho = rho_val,
     omega_sq = omega_sq_val, 
     tau_sq = tau_sq_val
-    
-    
-    
   )
   
-  
   c <-  length(unique(dat$moderator))
-  q <-  c-1
-  
-  df_num <- q
+  q <-  c - 1
   
   study_level_data <-  dat |> 
     group_by(cluster, moderator) |>
     summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') 
   
   study_level_data$tau_sq <- tau_sq_val
-     study_level_data$omega_sq <- omega_sq_val
-     study_level_data$rho <- rho_val
+  study_level_data$omega_sq <- omega_sq_val
+  study_level_data$rho <- rho_val
   
   
-  by_category <-  study_level_data |> 
+  by_category <-  
+    study_level_data |> 
     group_by(moderator) |> 
     mutate(
-      w_j = study_level_weights(k_j =k_j ,sigma_j_sq = mean_var, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) |> 
-    summarise(W = sum(w_j),
-              E_Vr = 1/W,
-              nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
+      w_j = study_level_weights(
+        k_j = k_j,
+        sigma_j_sq = mean_var, 
+        tau_sq = tau_sq, 
+        rho = rho, 
+        omega_sq = omega_sq 
+      )
+    ) |> 
+    summarise(
+      W = sum(w_j),
+      E_Vr = 1/W,
+      nu_Vr = (sum(w_j^2 / (W - w_j)^2) - (2 / W) * sum(w_j^3 / (W - w_j)^2) + (1 / W^2) * sum(w_j^2 / (W - w_j))^2)^(-1), 
+      .groups = 'drop' 
+    )
   
   
   
-  by_category$nu_D <- (q*(q+1)) / (2*(sum( (1/by_category$nu_Vr)* (1-(1/(by_category$E_Vr*sum(by_category$W))))^2 )))
-  by_category$df_num = df_num
+  by_category$nu_D <- q * (q+1)  / (2 * sum( (1 / by_category$nu_Vr) * (1 - (1 / (by_category$E_Vr * sum(by_category$W))))^2 ))
+  by_category$df_num = q
   
   
   return(by_category)
@@ -274,7 +279,7 @@ f_c <- function(pattern){
 # find the scaling factor
 zeta <- function(pattern, lambda, weights){
   
-  zeta <- sqrt((lambda)/(sum(weights*(pattern - sum(weights*pattern)/sum(weights) )^2)))
+  zeta <- sqrt(lambda / sum(weights*(pattern - sum(weights * pattern) / sum(weights))^2))
   
   return(zeta)
 }
@@ -282,7 +287,7 @@ zeta <- function(pattern, lambda, weights){
 # beta coefficients 
 build_mu <- function(pattern, zeta){
   
-  pattern*zeta
+  pattern * zeta
   
 }
 
@@ -300,19 +305,19 @@ build_mu <- function(pattern, zeta){
 design_matrix <- function(C, J, bal, k_j){
 
   
-  if(bal == "balanced_j"){
+  if (bal == "balanced_j"){
     
-    J_c <- J/C
+    J_c <- J / C
     
-    cat <-   rep(LETTERS[1:C], each = J_c)
+    cat <- rep(LETTERS[1:C], each = J_c)
   }
   
 
   
   ##### unbalanced
-  if(bal == "unbalanced_j"){
+  if (bal == "unbalanced_j") {
     
-    if (C == 2){
+    if (C == 2) {
       J_vec <- J * c(1/4, 3/4)
       cat <-   rep(LETTERS[1:C],  J_vec)
     }
@@ -325,7 +330,7 @@ design_matrix <- function(C, J, bal, k_j){
     #   
     # }
     
-    if (C == 3){
+    if (C == 3) {
       J_vec <- J * c(1/4, 1/4, 1/2)
       cat <-   rep(LETTERS[1:C],  J_vec)
     }
