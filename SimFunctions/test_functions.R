@@ -151,23 +151,24 @@ V <- with(meta_dat,
 fit <- rma.mv(g ~ -1 + category, 
                       V = V, random = ~ 1 | studyid/esid, 
                       data = meta_dat, test = "t", method = "REML")
+# JEP: Set the rma.mv argument sparse = TRUE to speed up calculation
 
 V_sep <- vcovCR(fit, cluster = meta_dat$studyid, type = "CR2")
 
-clubsandwichdf<- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_sep)
+clubsandwichdf <- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_sep)
 #clubsandwichdf$df_denom
  
 
 ### my function df 
-df  <- multiple_categories_df(data = meta_dat,
-                    moderator_val = category,
-                    cluster_id = studyid,
-                    sigma_j_sq_val = var_g,
-                    rho_val = .5,
-                    omega_sq_val = fit$sigma2[2],
-                    tau_sq_val = fit$sigma2[1]
-
-                      )
+df  <- multiple_categories_df(
+  data = meta_dat,
+  moderator_val = category,
+  cluster_id = studyid,
+  sigma_j_sq_val = var_g,
+  rho_val = .5,
+  omega_sq_val = fit$sigma2[2],
+  tau_sq_val = fit$sigma2[1]
+)
 
 df_Z <- as.numeric(df[1,5])
 q <- as.numeric(df[1,6])
@@ -178,10 +179,10 @@ VR <- vcovCR(fit, type = "CR2") |> as.matrix()
 
 Q <- as.numeric(t(C_sep %*% mu_hat) %*% solve(C_sep %*% VR %*% t(C_sep)) %*% (C_sep %*% mu_hat))
 
- delta <- (df_Z - q + 1) / (df_Z)
- Fstat <- delta * Q / q
- df_num <- q
- df_den <- df_Z - q + 1
+delta <- (df_Z - q + 1) / (df_Z)
+Fstat <- delta * Q / q
+df_num <- q
+df_den <- df_Z - q + 1
  
  
  ## test
