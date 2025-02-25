@@ -120,6 +120,9 @@ power_CHE_RVE_study_cat <- function(data = NULL,
                                     mu, 
                                     alpha) {
   
+  # JEP: It seems like this conditional and the following data.frame step aren't
+  # actually needed because the data frame will get tidied up inside multiple_categories_df().
+  
   ### get variables
   
   if (!is.null(data)) {
@@ -149,12 +152,8 @@ power_CHE_RVE_study_cat <- function(data = NULL,
     rho = rho_val,
     omega_sq = omega_sq_val, 
     tau_sq = tau_sq_val
-    
-    
-    
   )
-  
-  
+
   
   df <- multiple_categories_df(dat = dat, moderator = moderator, 
                             cluster = cluster,sigma_j_sq = sigma_j_sq, 
@@ -182,7 +181,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
 
 
 # plug into uniroot to get lambda or the non-centrality parameter
-non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area){
+non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area) {
   
   pf(x, d1, d2, ncp = lambda) - area
   
@@ -235,13 +234,13 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
 }
 
 # JEP: Could write this more efficiently as a list, e.g.,
-# f_c <- list(
+# f_c_lookup <- list(
 #   P1 = c(0,1),
 #   P2 = c(0,1,2),
 #   etc.
 # )
 # Then evaluate as
-# f_c[[pattern]]
+# f_c_lookup[[pattern]]
 
 # patterns of the beta_coefficients
 f_c <- function(pattern) {
@@ -420,7 +419,7 @@ mod <- function(C, J, bal, k_j){
 }
 
 
-# JEP: This seems like it also has a lot of redundancy with mod(). 
+# JEP: dat_approx() looks like it also has a lot of redundancy with mod(). 
 # Consider calling mod() instead of repeating the same code. 
 
 # data set for approximation function tests
@@ -588,6 +587,7 @@ power_approximation <- function(C,
 
 
 # JEP: Do you actually need this function?
+# It seems like it does basically the same thing as power_CHE_RVE_study_cat()?
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -679,7 +679,7 @@ ftoc <- function(f_c_val) {
 }
 
 
-#given conditions get beta coefficients/ mu values
+# given conditions get beta coefficients/ mu values
 mu_values <- function(
   J, 
   tau_sq, 
@@ -1165,6 +1165,7 @@ run_sim <- function(iterations,
    
                   sample_dat <- n_ES_empirical(pilot_data, J = J)
                   
+                  # JEP: Do this check on the pilot data, outside of the mapping step.
                   ## NOTE make sure empirical dat has SE and not Var or CHANGE THIS. 
                   if(sigma_j_sq_inc == TRUE){
                     sigma_j_sq = sample_dat$se_avg^2
