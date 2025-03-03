@@ -629,7 +629,7 @@ generate_smd <- function(delta, k_j, N, Sigma) {
 # }
 #-----------------------------------------------------------------------------  
 
-generate_meta <- function(J, tau_sq, 
+generate_meta <- function(return_mu = NULL, J, tau_sq, 
                           omega_sq, bal, 
                          # C,
                          # cor_mu, cor_sd, 
@@ -701,7 +701,9 @@ generate_meta <- function(J, tau_sq,
     select(-delta, -k_j, -N, -Sigma) |>
     unnest(cols = c(smds, X))
   
-
+  if(!is.null(return_mu)){
+    meta_reg_dat <- list(meta_reg_dat, mu_vector)
+  }
   
   
   return(meta_reg_dat)
@@ -862,14 +864,12 @@ generate_meta2 <- function(J, tau_sq,
 
 
 estimate_model <- function(data = NULL,
+                           return_mu = NULL,
                            moderator_val,
                            cluster_id,
                            delta, 
                            delta_var,
                            es_id,
-                          # formula, 
-                         #  C,  
-                         #  vi,
                            r= 0.7,
                            smooth_vi = TRUE, 
                            control_list = list()
@@ -898,7 +898,14 @@ estimate_model <- function(data = NULL,
   #   es_id <- eval(es_id_call, env)
   #   
   # }
-  
+  if(!is.null(return_mu)){
+   
+     dat <- data[[1]]
+     mu_vector <- data[[2]]
+     
+     
+  }
+    
   dat <- data.frame(
     study_id = cluster_id,
     moderator = moderator_val,
@@ -975,6 +982,15 @@ estimate_model <- function(data = NULL,
     ) %>%
     bind_rows(res, .)
   
+ 
+  
+  if(!is.null(return_mu)){
+    
+    res$mu_vector_list <- list(mu_vector)
+    
+    
+  }
+  
   res
   
 }
@@ -1023,20 +1039,16 @@ run_sim <- function(iterations,
                     tau_sq, 
                     omega_sq, 
                     bal, 
-                    #C,
-                    # cor_mu, cor_sd, 
                     rho, 
                     P, 
                     f_c_val,
-                  # sample_sizes, 
-                  #  k_j,
                     sigma_j_sq_inc = NULL,
                     pilot_data = NULL,
                     return_study_params = FALSE,
                     seed = NULL,
                     summarize_results = FALSE){
   
-
+ require(dplyr)
   
   #in this case power is conditional on study features. basically I specify given set of study features that are
   #generated randomly, and I want the prob of sig. result to be a value for this given set of study features. 
@@ -1072,6 +1084,7 @@ run_sim <- function(iterations,
                                        f_c_val = f_c_val,
                                        sigma_j_sq = sigma_j_sq,
                                        return_study_params = return_study_params,
+                                       return_mu = NULL,
                                        seed = seed ## maybe should remove this here and only keep in run_sim
                                      )
                   
@@ -1087,6 +1100,7 @@ run_sim <- function(iterations,
                                              #  vi,
                                              r= rho,
                                              smooth_vi = TRUE, 
+                                             return_mu = NULL,
                                              control_list = list()
                   )
                   
@@ -1105,13 +1119,9 @@ run_sim2 <- function(iterations,
                     tau_sq, 
                     omega_sq, 
                     bal, 
-                    #C,
-                    # cor_mu, cor_sd, 
                     rho, 
                     P, 
                     f_c_val,
-                    # sample_sizes, 
-                    #  k_j,
                     sigma_j_sq_inc = NULL,
                     pilot_data = NULL,
                     return_study_params = FALSE,
@@ -1120,9 +1130,8 @@ run_sim2 <- function(iterations,
   
   # in this case we are specifying power unconditionally. If we were able to we would specify power unconditionally over the distribution of study features that are generated. 
   #but that is tricky to do since unconditional power will then depend on the whole distribution of study features. 
-  # So, we need to simplfy it a little for the purpose of the sim. still specify range of power of levels for a data set that has all  average study features
+  # So, we need to simplify it a little for the purpose of the sim. still specify range of power of levels for a data set that has all average study features
   # meaning now variation in the number of effects or primary study sample sizes. 
-  # using k_j for entire 
   
   if (!is.null(seed)) set.seed(seed)
   
@@ -1162,6 +1171,8 @@ run_sim2 <- function(iterations,
   results <- map(iterations, ~{
     sample_dat <- n_ES_empirical(pilot_data, J = J)
     
+ 
+    
     if(sigma_j_sq_inc == TRUE){
       sigma_j_sq = sample_dat$sigma_j_sq
     } else{
@@ -1178,8 +1189,8 @@ run_sim2 <- function(iterations,
                          rho = rho, 
                          P = P, 
                          sample_sizes = sample_dat$N, 
-                          k_j = sample_dat$kj,
-                        mu_vector = mu_vector,
+                         k_j = sample_dat$kj,
+                         mu_vector = mu_vector,
                      
                          f_c_val = f_c_val,
                          sigma_j_sq = sigma_j_sq,
@@ -1199,8 +1210,15 @@ run_sim2 <- function(iterations,
                                #  vi,
                                r= rho,
                                smooth_vi = TRUE, 
+                               return_mu = NULL,
                                control_list = list()
     )
+    
+   
+    
+    est_res$mu_vector_list <-  list(mu_vector)
+    
+    est_res
     
   }) |> dplyr::bind_rows()
   

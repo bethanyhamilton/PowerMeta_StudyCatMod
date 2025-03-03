@@ -306,6 +306,11 @@ dat_kjN_math <-
   filter(N < 500, kj < 20) |> 
   as.data.frame()
 
+dat_kjN_math <- dat_kjN_math %>% filter( N < (kj+2))
+
+
+
+
 range(math_dat$kj)
 
 length(unique(dat_kjN_math$N))

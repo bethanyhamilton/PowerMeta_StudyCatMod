@@ -93,7 +93,7 @@ design_factors_bal <- list(
 
 
 # new conditions -- 5*2*2*2*6*8*2= 3840 conditions
-design_factors_bal <- list(
+design_factors <- list(
   J = c(24, 36, 48, 60, 72),
   tau_sq = c(0.05,  0.40)^2, 
   omega_sq = c(0.05,  0.20)^2,

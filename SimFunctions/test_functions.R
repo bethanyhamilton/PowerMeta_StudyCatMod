@@ -217,7 +217,8 @@ df_den <- df_Z - q + 1
                             omega_sq = .05^2, 
                             bal = "balanced_j", 
                             #C = 4,
-                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+                            rho = .5, P = .9, 
+                            sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
                             f_c_val = "P5",
@@ -372,26 +373,26 @@ df_den <- df_Z - q + 1
  rm(list=ls())
  
  ## df greater kj 
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
- set.seed(2122025)
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
- 
- dat_kjN_samp <- dat_kjN_samp |>  filter(kj == 12)
- meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
-                            bal = "balanced_j", 
-                            #C = 4,
-                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = NULL,
-                            f_c_val = "P5",
-                            return_study_params = FALSE,
-                            seed = NULL)
- 
-
- head(meta_dat2)
- 
+ # source("SimFunctions/functionsdatagen.R")
+ # dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
+ # set.seed(2122025)
+ # dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+ # 
+ # dat_kjN_samp <- dat_kjN_samp |>  filter(kj == 12)
+ # meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
+ #                            omega_sq = .05^2, 
+ #                            bal = "balanced_j", 
+ #                            #C = 4,
+ #                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
+ #                            k_j = dat_kjN_samp$kj,
+ #                            sigma_j_sq = NULL,
+ #                            f_c_val = "P5",
+ #                            return_study_params = FALSE,
+ #                            seed = NULL)
+ # 
+ # 
+ # head(meta_dat2)
+ # 
 
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
@@ -404,17 +405,21 @@ df_den <- df_Z - q + 1
  set.seed(1232024)
  
  test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
- meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", 
-                           #C = 4,
-                          rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
-                          f_c_val = "P5", return_study_params = FALSE,
-                                       seed = NULL)
+ meta_dat <- generate_meta(
+   J = 12,
+   tau_sq = .05^2,
+   omega_sq = .05^2,
+   bal = "balanced_j",
+   #C = 4,
+   rho = .5,
+   P = .9,
+   sample_sizes = test_dat$N,
+   k_j = test_dat$k_j,
+   f_c_val = "P5",
+   return_study_params = FALSE,
+   seed = NULL
+ )
 
- # test_output <- estimate_model(data= meta_dat, formula= g ~ 0 +category, 
- #                               moderator_val = category,cluster_id = studyid,
- #                               delta = g, delta_var = var_g,es_id = esid, r= 0.5, 
- #                       smooth_vi = TRUE, control_list = list()
- # )
  
  test_output <- estimate_model( 
    #formula= g ~ 0 + category, 
@@ -423,9 +428,15 @@ df_den <- df_Z - q + 1
                                delta = meta_dat$g, 
                                delta_var = meta_dat$var_g,es_id = meta_dat$esid, 
                                r= 0.5, 
-                               smooth_vi = TRUE, control_list = list()
+                               smooth_vi = TRUE, 
+                               control_list = list()
  )
 
+ 
+ 
+
+ 
+ 
  
 # meta_dat$studyid <- as.factor(meta_dat$studyid)
  
@@ -476,6 +487,38 @@ df_den <- df_Z - q + 1
  all.equal(myfunc_output,metafor_output)
  all.equal(test_output$est_var, list(coef_RVE2$se^2))
  
+ #----------------------------------------------------
+ # test estimate if I want to get mu_Values from the generate_meta function. 
+ 
+ meta_dat_mu_val <- generate_meta(J = 12, 
+                                  tau_sq = .05^2, 
+                                  omega_sq = .05^2,
+                                  bal = "balanced_j", 
+                                  #C = 4,
+                                  rho = .5, P = .9, 
+                                  sample_sizes = test_dat$N, 
+                                  k_j = test_dat$k_j,
+                                  f_c_val = "P5", 
+                                  return_study_params = FALSE, 
+                                  return_mu = TRUE,
+                                  seed = NULL)
+ 
+ test_output_mu_val <- estimate_model( 
+   #formula= g ~ 0 + category, 
+   moderator_val = meta_dat_mu_val[[1]]$category,
+   cluster_id = meta_dat_mu_val[[1]]$studyid,
+   delta = meta_dat_mu_val[[1]]$g, 
+   delta_var = meta_dat_mu_val[[1]]$var_g,
+   es_id = meta_dat_mu_val[[1]]$esid, 
+   r= 0.5, 
+   smooth_vi = TRUE, 
+   return_mu = TRUE,
+   data = meta_dat_mu_val,
+   
+   control_list = list()
+ )
+ test_output_mu_val
+ 
  
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
@@ -517,120 +560,25 @@ df_den <- df_Z - q + 1
  
  
  tm2 <- system.time(test2 <- run_sim2(iterations = 1, 
-                                    J = 72, tau_sq = .05^2, 
-                                    omega_sq = .05^2, 
+                                    J = 60, tau_sq = (0.40)^2, 
+                                    omega_sq = (0.20)^2, 
                                     bal = "balanced_j", 
-                                    rho = .5, P = .9, 
-                                    f_c_val = "P5",
+                                    rho = .8, P = .9, 
+                                    f_c_val = "P8",
                                     sigma_j_sq_inc = FALSE,
                                     pilot_data = dat_kjN, 
                                     return_study_params = FALSE,
                                     seed = NULL,
                                     summarize_results = FALSE))
  
+
  
+ ### Notes
  #number of conditions
  5*2*2*2*6*8*2 
  #3840
  
- #time for run (with J=72) * number reps (2500) * conditions
+ #time in sec for run (with J=72) (one core/4.80 GHz) * number reps (2500) * conditions  
  tm1[[3]]*2500*3840
  
  tm2[[3]]*2500*3840
- 
-# df_Z <- multiple_categories(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)
-# 
-
-
-# multiple_categories <- function(dat, moderator, cluster, fit, d_var , rho){
-#   
-#   c <-  length(coef(fit))
-#   q <-  c-1
-#   
-#   dat <- dat %>% 
-#     mutate(moderator = moderator,
-#            cluster = cluster, 
-#            d_var = d_var)
-#   
-#   
-#   study_level_data <-  dat %>% group_by(moderator, cluster) %>% summarise(mean_var = mean(d_var), k_j = n(), .groups = 'drop') 
-#   
-#   study_level_data$tau_sq <- fit$sigma2[1]
-#   study_level_data$omega_sq <- fit$sigma2[2]
-#   study_level_data$rho <- rho
-#   
-#   by_category <-  study_level_data %>% 
-#     group_by(moderator) %>% 
-#     mutate(
-#       w_j = study_level_weights(k_j =k_j ,sigma_j = mean_var, tau_sq = tau_sq, rho = rho, omega_sq = omega_sq )) %>% 
-#     summarise(W = sum(w_j),
-#               E_Vr = 1/W,
-#               nu_Vr = (sum(w_j^2/(W-w_j)^2) - ((2/W)*sum(w_j^3/(W-w_j)^2)) + ((1/W^2)*(sum(w_j^2/(W-w_j)))^2)) ^(-1), .groups = 'drop' )
-#   
-#   
-#   
-#   nu_D <- (q*(q+1)) / (2*(sum( (1/by_category$nu_Vr)* (1-(1/(by_category$E_Vr*sum(by_category$W))))^2 )))
-#   
-#   return(nu_D)
-#   
-# }
-# 
-# q = 4-1
-
-
-
- # 
-# df_num <- df2$df_num[1]
-# df_den <- df2$nu_D[1] - df2$df_num[1] + 1
-# # 
-#  f_crit <- qf(1-.05, df_num,df_den )
-# # 
-#  lambda <- find_lambda(d1= df_num, d2 = df_den, x = f_crit, area = 1 - .9, interval = c(0, 100), tol = 0.0001)
-#  # 
-#  f_c <- c(0, 1, 2)
-# # #f_c <- c(0, 0, 1)
-# # #f_c <- c(0, 1, 1)
-# # 
-#  zeta_val <- zeta(pattern = f_c, lambda = lambda, weights =df2$W )
-# # 
-#  mu_values <- build_mu(pattern = f_c, zeta = zeta_val)
-# # 
-# # # test to get the same. 
-#  power_CHE_RVE_study_cat(dat = data_ex, moderator = data_ex$three_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j , rho = data_ex$rho, omega_sq = data_ex$omega, tau_sq = data_ex$tau, mu = mu_values, alpha = .05)
-# # 
-# # # 
-# 
-# 
-# # 
-# ## test find zeta
-#data_ex <- tibble(studyid = c(1:40),
-#                 k_j = rep(10, 40),
-#                 n_j = rep(100, 40),
-#                 sigma_j = sqrt(4 / n_j),
-#                 omega = rep(.10, 40),
-#                 rho = rep(.5, 40),
-#                 tau = rep(.20, 40),
-#                 #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
-#                 two_cat =c(rep("a",20), rep("b",20))
-#)
-# 
-# data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
-# 
-# 
-# df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
-# 
-# 
-# df_num <- df2$df_num[1]
-# df_den <- df2$nu_D[1] - df2$df_num[1] + 1
-
-#weights <- df2$W
-
-#fp <- c(0, 1, 2, 3)
-
-#zeta_val <- zeta(pattern = fp, lambda = 1.562499, weights =weights )
-
-
-
-
-#build_mu(pattern = fp, zeta = zeta)
-
