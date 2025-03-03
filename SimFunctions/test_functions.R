@@ -34,7 +34,7 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
                        omega_sq = .05^2,
                        rho = .5, P = .9, 
                        k_j = 3, N = 30, 
-                       f_c_val = 5, 
+                       f_c_val = "P5", 
                        #sigma_j_sq = NA,
                        bal ="balanced_j" )
 mu_vector
@@ -66,7 +66,7 @@ run_power(C = 4,
           N = 30,
           bal = "balanced_j",
           P = .9, 
-          f_c_val = 5)
+          f_c_val = "P5")
 
 
 
@@ -113,7 +113,8 @@ test <- power_approximation(C = 4,
                             sample_size_method = c("balanced","stylized","empirical"),
                             #mu_vec = mu_vector,
                             P = .5,
-                            f_c_val = 5,
+                           # f_c_val = 5,
+                           f_c_val = "P5",
                             bal = "balanced_j",
                             seed = NULL)
 test
@@ -137,7 +138,7 @@ meta_dat <- generate_meta(J = 12, tau_sq = .05^2,
                                       rho = .5, P = .9, sample_sizes = sample_empirical_dat$N, 
                                       k_j = sample_empirical_dat$k_j,
                                       sigma_j_sq = NULL,
-                                      f_c_val = 5,
+                                      f_c_val = "P5",
                                       return_study_params = FALSE,
                                       seed = NULL)
 
@@ -149,9 +150,9 @@ V <- with(meta_dat,
           clubSandwich::impute_covariance_matrix(vi = var_g, cluster = studyid, r = .5, smooth_vi = TRUE))
 
 fit <- rma.mv(g ~ -1 + category, 
-                      V = V, random = ~ 1 | studyid/esid, 
+                      V = V, random = ~ 1 | studyid/esid, sparse = TRUE,
                       data = meta_dat, test = "t", method = "REML")
-# JEP: Set the rma.mv argument sparse = TRUE to speed up calculation
+
 
 V_sep <- vcovCR(fit, cluster = meta_dat$studyid, type = "CR2")
 
@@ -160,7 +161,7 @@ clubsandwichdf <- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_
  
 
 ### my function df 
-df  <- multiple_categories_df(
+multiplecat  <- multiple_categories(
   data = meta_dat,
   moderator_val = category,
   cluster_id = studyid,
@@ -170,8 +171,9 @@ df  <- multiple_categories_df(
   tau_sq_val = fit$sigma2[1]
 )
 
-df_Z <- as.numeric(df[1,5])
-q <- as.numeric(df[1,6])
+df_Z <- df_val(E_Vr = multiplecat$E_Vr, nu_Vr = multiplecat$nu_Vr, W = multiplecat$W)[[2]]
+q <- df_val(E_Vr = multiplecat$E_Vr, nu_Vr = multiplecat$nu_Vr, W = multiplecat$W)[[1]]
+
 C_sep <- constrain_equal(1:4, coefs = coef(fit))
 mu_hat <- coef(fit)
 VR <- vcovCR(fit, type = "CR2") |> as.matrix()
@@ -218,7 +220,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
-                            f_c_val = 5,
+                            f_c_val = "P5",
                             return_study_params = FALSE,
                             seed = NULL)
  
@@ -242,7 +244,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
-                            f_c_val = 5,
+                            f_c_val = "P5",
                             return_study_params = FALSE,
                             seed = NULL)
  meta_dat3 |> group_by(category) |>  tally()
@@ -256,7 +258,7 @@ df_den <- df_Z - q + 1
                         omega_sq = 0.20^2,
                         rho = .5, P = .9, 
                         k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = 4, 
+                        f_c_val = "P4", 
                         #sigma_j_sq = NA,
                         bal ="unbalanced_j" )
  mu_vector
@@ -268,7 +270,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
-                            f_c_val = 4,
+                            f_c_val = "P4",
                             return_study_params = FALSE,
                             seed = NULL)
  meta_dat3  |>  group_by(category)  |>  tally()
@@ -320,7 +322,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
                             k_j = dat_kjN_samp2$kj,
                             sigma_j_sq = NULL,
-                            f_c_val = 1,
+                            f_c_val = "P1",
                             return_study_params = FALSE,
                             seed = NULL)
  
@@ -346,7 +348,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp2$N, 
                             k_j = dat_kjN_samp2$kj,
                             sigma_j_sq = dat_kjN_samp2$se_avg^2,
-                            f_c_val = 1,
+                            f_c_val = "P1",
                             return_study_params = FALSE,
                             seed = NULL)
  
@@ -383,7 +385,7 @@ df_den <- df_Z - q + 1
                             rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
                             k_j = dat_kjN_samp$kj,
                             sigma_j_sq = NULL,
-                            f_c_val = 5,
+                            f_c_val = "P5",
                             return_study_params = FALSE,
                             seed = NULL)
  
@@ -405,7 +407,7 @@ df_den <- df_Z - q + 1
  meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced_j", 
                            #C = 4,
                           rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
-                          f_c_val = 5, return_study_params = FALSE,
+                          f_c_val = "P5", return_study_params = FALSE,
                                        seed = NULL)
 
  # test_output <- estimate_model(data= meta_dat, formula= g ~ 0 +category, 
@@ -494,7 +496,7 @@ df_den <- df_Z - q + 1
                  omega_sq = .05^2, 
                  bal = "balanced_j", 
                  rho = .5, P = .9, 
-                 f_c_val = 5,
+                 f_c_val = "P5",
                  sigma_j_sq_inc = FALSE,
                  pilot_data = dat_kjN, 
                  return_study_params = FALSE,
@@ -502,11 +504,11 @@ df_den <- df_Z - q + 1
                  summarize_results = FALSE)
  
  tm1 <- system.time(test <- run_sim(iterations = 1, 
-                                    J = 24, tau_sq = .05^2, 
+                                    J = 72, tau_sq = .05^2, 
                                     omega_sq = .05^2, 
                                     bal = "balanced_j", 
                                     rho = .5, P = .9, 
-                                    f_c_val = 5,
+                                    f_c_val = "P5",
                                     sigma_j_sq_inc = FALSE,
                                     pilot_data = dat_kjN, 
                                     return_study_params = FALSE,
@@ -514,12 +516,33 @@ df_den <- df_Z - q + 1
                                     summarize_results = FALSE))
  
  
+ tm2 <- system.time(test2 <- run_sim2(iterations = 1, 
+                                    J = 72, tau_sq = .05^2, 
+                                    omega_sq = .05^2, 
+                                    bal = "balanced_j", 
+                                    rho = .5, P = .9, 
+                                    f_c_val = "P5",
+                                    sigma_j_sq_inc = FALSE,
+                                    pilot_data = dat_kjN, 
+                                    return_study_params = FALSE,
+                                    seed = NULL,
+                                    summarize_results = FALSE))
  
-# df_Z <- multiple_categories_df(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)
+ 
+ #number of conditions
+ 5*2*2*2*6*8*2 
+ #3840
+ 
+ #time for run (with J=72) * number reps (2500) * conditions
+ tm1[[3]]*2500*3840
+ 
+ tm2[[3]]*2500*3840
+ 
+# df_Z <- multiple_categories(dat = meta_dat, moderator = meta_dat$category, cluster = meta_dat$studyid, fit = fit, d_var = meta_dat$var_g, rho = .5)
 # 
 
 
-# multiple_categories_df <- function(dat, moderator, cluster, fit, d_var , rho){
+# multiple_categories <- function(dat, moderator, cluster, fit, d_var , rho){
 #   
 #   c <-  length(coef(fit))
 #   q <-  c-1
@@ -580,21 +603,21 @@ df_den <- df_Z - q + 1
 # 
 # # 
 # ## test find zeta
-# data_ex <- tibble(studyid = c(1:40),
-#                  k_j = rep(10, 40),
-#                  n_j = rep(100, 40),
-#                  sigma_j = sqrt(4 / n_j),
-#                  omega = rep(.10, 40),
-#                  rho = rep(.5, 40),
-#                  tau = rep(.20, 40),
-#                  #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
-#                  two_cat =c(rep("a",20), rep("b",20))
-# )
+#data_ex <- tibble(studyid = c(1:40),
+#                 k_j = rep(10, 40),
+#                 n_j = rep(100, 40),
+#                 sigma_j = sqrt(4 / n_j),
+#                 omega = rep(.10, 40),
+#                 rho = rep(.5, 40),
+#                 tau = rep(.20, 40),
+#                 #   category = sample(letters[1:C], size = 40, replace = TRUE, prob = c(.25, .25,.25, .25))
+#                 two_cat =c(rep("a",20), rep("b",20))
+#)
 # 
 # data_ex$four_cat <- c(rep("a",10), rep("b",10), rep("c",10), rep("d",10))
 # 
 # 
-# df2 <- multiple_categories_df(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
+# df2 <- multiple_categories(dat = data_ex, moderator = data_ex$four_cat, cluster = data_ex$studyid, sigma_j = data_ex$sigma_j, rho = data_ex$rho,omega_sq = data_ex$omega, tau_sq = data_ex$tau)
 # 
 # 
 # df_num <- df2$df_num[1]

@@ -83,7 +83,6 @@ run_mu <- function(
 
 
 design_factors_bal <- list(
- # C = c(2, 3, 4),
   J = c(12, 24, 36, 48, 60, 72),
   tau_sq = c(0.05, 0.20, 0.40)^2, 
   omega_sq = c(0.05, 0.10, 0.20)^2,
@@ -91,6 +90,20 @@ design_factors_bal <- list(
   P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9),
   f_c_val = c(1, 2, 3, 4, 5, 6, 7, 8)
 )
+
+
+# new conditions -- 5*2*2*2*6*8*2= 3840 conditions
+design_factors_bal <- list(
+  J = c(24, 36, 48, 60, 72),
+  tau_sq = c(0.05,  0.40)^2, 
+  omega_sq = c(0.05,  0.20)^2,
+  rho = c(.2,  .8),
+  P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9),
+  f_c_val = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"),
+  bal = c("balanced_j", "unbalanced_j")
+)
+
+
 
 
 params <- expand.grid(design_factors_bal) 

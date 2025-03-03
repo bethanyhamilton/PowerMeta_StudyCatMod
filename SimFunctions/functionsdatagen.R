@@ -12,7 +12,7 @@ study_level_weights <- function(k_j,sigma_j_sq,
 
 
 # degrees of freedom for moderator with multiple categories
-multiple_categories_df <- function(data= NULL, 
+multiple_categories <- function(data= NULL, 
                                 moderator_val, 
                                 cluster_id, 
                                 sigma_j_sq_val, 
@@ -83,19 +83,25 @@ multiple_categories_df <- function(data= NULL,
     )
   
   
-  # JEP: It seems like this function should just return
-  # nu_D and df_num as single values because they apply 
-  # to the test of equality across categories rather than to
-  # specific levels of the moderator
-  
-  by_category$nu_D <- q * (q+1)  / (2 * sum( (1 / by_category$nu_Vr) * (1 - (1 / (by_category$E_Vr * sum(by_category$W))))^2 ))
-  by_category$df_num = q
-  
-  
   return(by_category)
   
 }
 
+
+# function for just df:
+
+df_val <- function(E_Vr, nu_Vr, W) { 
+  
+  q <- length(E_Vr) - 1
+  
+  df_num <-  q 
+  nu_D <- q * (q+1)  / (2 * sum( (1 / nu_Vr) * (1 - (1 / (E_Vr * sum(W))))^2 ))
+   
+  
+  return(tibble(df_num, nu_D))
+  
+  }
+   
 
 
 
@@ -120,49 +126,35 @@ power_CHE_RVE_study_cat <- function(data = NULL,
                                     mu, 
                                     alpha) {
   
-  # JEP: It seems like this conditional and the following data.frame step aren't
-  # actually needed because the data frame will get tidied up inside multiple_categories_df().
+
+  #rename functions and objects 
+  multiple_cat <- multiple_categories(
+                         
+                          dat = data,
+                          moderator = moderator_val, 
+                          cluster = cluster_id, 
+                          # dat = dat, 
+                          #moderator = moderator, 
+                          #  cluster = cluster,
+                          sigma_j_sq = sigma_j_sq, 
+                            rho = rho,omega_sq = omega_sq, tau_sq = tau_sq
+                          )
   
-  ### get variables
-  
-  if (!is.null(data)) {
-    moderator_call <- substitute(moderator_val)
-    cluster_call <- substitute(cluster_id)
-    sigma_j_sq_call <- substitute(sigma_j_sq_val)
-    rho_call <- substitute(rho_val)
-    omega_sq_call <- substitute(omega_sq_val)
-    tau_sq_call <- substitute(tau_sq_val)
-    
-    
-    env <- list2env(data, parent = parent.frame())
-    
-    moderator_val <- eval(moderator_call, env)
-    cluster_id <- eval(cluster_call, env)
-    sigma_j_sq_val <- eval(sigma_j_sq_call, env)
-    rho_val <- eval(rho_call, env)
-    omega_sq_val <- eval(omega_sq_call, env)
-    tau_sq_val <- eval(tau_sq_call, env)
-    
-  }
-  
-  dat <- data.frame(
-    cluster = factor(cluster_id),
-    moderator = moderator_val,
-    sigma_j_sq = sigma_j_sq_val,
-    rho = rho_val,
-    omega_sq = omega_sq_val, 
-    tau_sq = tau_sq_val
-  )
 
   
-  df <- multiple_categories_df(dat = dat, moderator = moderator, 
-                            cluster = cluster,sigma_j_sq = sigma_j_sq, 
-                            rho = rho,omega_sq = omega_sq, tau_sq = tau_sq)
   
-  ncp <-  ncp(weights = df$W, mu_p = mu)
+  ncp <-  ncp(weights = multiple_cat$W, mu_p = mu)
   
-  df_num <- df$df_num[1]
-  df_den <- df$nu_D[1] - df$df_num[1] + 1
+  
+  ##########################################
+  
+  
+  
+  df_num <- df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[1]]
+    
+    
+  #  df$df_num[1]
+  df_den <- df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[2]] - df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[1]] + 1
   
   
   F_crit <- qf(1-alpha, df_num, df_den)
@@ -213,10 +205,7 @@ non_central_f_cdf_reverse <- function(lambda, d1, d2, x, area) {
 
 # find lambda (NCP)
 
-# JEP: Does this function need the lambda argument?
-# It seems like lambda is the output, not an input.
-
-find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
+find_lambda <- function(d1, d2, x, area, interval, tol){
   
   
   # needed to add this since mu should be 0 in this case since it is equal to
@@ -233,56 +222,17 @@ find_lambda <- function(lambda, d1, d2, x, area, interval, tol){
  
 }
 
-# JEP: Could write this more efficiently as a list, e.g.,
-# f_c_lookup <- list(
-#   P1 = c(0,1),
-#   P2 = c(0,1,2),
-#   etc.
-# )
-# Then evaluate as
-# f_c_lookup[[pattern]]
-
 # patterns of the beta_coefficients
-f_c <- function(pattern) {
-  
-  # C  = 2
-  if(pattern == 1){
-    f_c <- c(0, 1)
-  }
-  
-  # C  = 3
-  if(pattern == 2){
-    f_c <- c(0, 1, 2)
-  }
-  
-  if(pattern == 3){
-    f_c <- c(0, 0, 1)
-  }
-  
-  if(pattern == 4){
-    f_c <- c(0, 1, 1)
-  }
-  
-  # C  = 4
-  if(pattern == 5){
-    f_c <- c(0, 1, 2, 3)
-  }
-  
-  if(pattern == 6){
-    f_c <- c(0, 0, 1, 2)
-  }
-  
-  if(pattern == 7){
-    f_c <- c(0, 0, 0, 1)
-  }
-  
-  if(pattern == 8){
-    f_c <- c(0, 0, 1, 1)
-  }
-  
-  return(f_c)
-}
-
+f_c_lookup <- list(
+  P1 = c(0,1),
+  P2 = c(0,1,2),
+  P3 = c(0, 0, 1),
+  P4 = c(0, 1, 1),
+  P5 = c(0, 1, 2, 3),
+  P6 = c(0, 0, 1, 2),
+  P7 = c(0, 0, 0, 1),
+  P8 = c(0, 0, 1, 1)
+)
 
 
 # find the scaling factor
@@ -293,13 +243,6 @@ zeta <- function(pattern, lambda, weights){
   return(zeta)
 }
 
-# beta coefficients 
-# JEP: Does this need to be its own separate function?
-build_mu <- function(pattern, zeta){
-  
-  pattern * zeta
-  
-}
 
 # design matrix 
 
@@ -312,104 +255,36 @@ build_mu <- function(pattern, zeta){
 #### constrained to multiples of 12.to compare across balanced and unbalanced conditions -- probably need to workshop this more
 #follow rule -- always increasing in number of studies. smaller number of studies will be on smallest mu. 
 
-# JEP: This function has a lot of redundancy with mod() below.
-# Do you really need both? If so, then consider refactoring 
-# design_matrix() to call mod() and then call model.matrix() on the result.
 design_matrix <- function(C, J, bal, k_j){
 
+  categories <- mod(C = C, J = J, bal = bal, k_j = k_j)
   
-  if (bal == "balanced_j"){
-    
-    J_c <- J / C
-    
-    cat <- rep(LETTERS[1:C], each = J_c)
-  }
-  
-
-  
-  ##### unbalanced
-  if (bal == "unbalanced_j") {
-    
-    if (C == 2) {
-      J_vec <- J * c(1/4, 3/4)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-    
-    # #less unbalanced
-    # if (C == 3){
-    #   
-    #   J_vec <- J * c(1/6, 5/12, 5/12)
-    #   
-    #   
-    # }
-    
-    if (C == 3) {
-      J_vec <- J * c(1/4, 1/4, 1/2)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-
-
-    if (C == 4){
-      J_vec <- J * c(1/6, 1/6, 1/6, 1/2)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-  }
-  
-  #needs to be K x K 
-  
-  categories <-   data.frame(cat = rep(cat, k_j))
-  
-  X <- model.matrix(~ 0 + cat, categories) 
+  X <- model.matrix(~ 0 + category, categories) 
   
   return(X)
   
 }
 
 # data set with categorical moderator
-mod <- function(C, J, bal, k_j){
-  
-  
-  if(bal == "balanced_j"){
-    
-    J_c <- J/C
-    cat <-   rep(LETTERS[1:C], each = J_c)
-    
-    
-  }
-  
-  ##### unbalanced
-  if(bal == "unbalanced_j"){
-    
-    if (C == 2){
-      J_vec <- J * c(1/4, 3/4)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-    
-    # #less unbalanced
-    # if (C == 3){
-    #   
-    #   J_vec <- J * c(1/6, 5/12, 5/12)
-    #   
-    #   
-    # }
-    
-    if (C == 3){
-      J_vec <- J * c(1/4, 1/4, 1/2)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-    
-    
-    if (C == 4){
-      J_vec <- J * c(1/6, 1/6, 1/6, 1/2)
-      cat <-   rep(LETTERS[1:C],  J_vec)
-    }
-  }
-  
+mod <- function(C, J, bal, k_j ){
+
   N = sum(k_j)
+  
+  
+ category_study  <-  dat_approx(C = C, 
+                                J = J, 
+                                tau_sq = NULL, 
+                                omega_sq = NULL, 
+                                rho = NULL, 
+                                k_j = k_j, 
+                                N= NULL, 
+                                sigma_j_sq = NULL, 
+                                bal = bal)
+  
   
   #needs to be K x K
   
-  covariates <- tibble(category = c(rep(cat,  k_j)),
+  covariates <- tibble(category = c(rep(category_study$cat,  k_j)),
          studyid = as.character(c(rep(c(1:J),  k_j))),
          esid = 1:N)
 
@@ -418,17 +293,9 @@ mod <- function(C, J, bal, k_j){
   
 }
 
-
-# JEP: dat_approx() looks like it also has a lot of redundancy with mod(). 
-# Consider calling mod() instead of repeating the same code. 
-
-# data set for approximation function tests
+#study-level dat
 dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = NULL, bal) {
   
-  # JEP: This conditional isn't needed.
-  if(!is.null(sigma_j_sq)){
-    sigma_j_sq = sigma_j_sq
-  } 
   
 
   if(!is.null(N) & is.null(sigma_j_sq)){
@@ -475,7 +342,6 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
  
 
 dat_approx <- tibble(studyid = c(1:J),
-                      # k_j = rep(k_j, J),
                        k_j= k_j,
                        sigma_j_sq = sigma_j_sq, ##### CHANGE THIS LATER
                        omega_sq = rep(omega_sq, J),
@@ -618,12 +484,12 @@ run_power <- function(C,
   
   
   power <-  power_CHE_RVE_study_cat(data = dat_app, 
-                                    moderator_val  = cat, 
-                                    cluster_id = studyid, 
-                                    sigma_j_sq_val = sigma_j_sq,
-                                    rho_val = rho,
-                                    omega_sq_val = omega_sq,
-                                    tau_sq_val = tau_sq,
+                                    moderator_val  = dat_app$cat, 
+                                    cluster_id = dat_app$studyid, 
+                                    sigma_j_sq_val = dat_app$sigma_j_sq,
+                                    rho_val = dat_app$rho,
+                                    omega_sq_val = dat_app$omega_sq,
+                                    tau_sq_val = dat_app$tau_sq,
                                     mu = mu_vec, 
                                     alpha = .05)
   
@@ -633,50 +499,9 @@ run_power <- function(C,
   
 }
 
-
-# JEP: As with f_c() above, you could implement this more
-# simply with a list (or even a named vector).
-
-ftoc <- function(f_c_val) {
-  
-  # C  = 2
-  if(f_c_val == 1){
-    C= 2
-  }
-  
-  # C  = 3
-  if(f_c_val == 2){
-    C= 3
-  }
-  
-  if(f_c_val == 3){
-    C= 3
-  }
-  
-  if(f_c_val == 4){
-    C= 3
-  }
-  
-  # C  = 4
-  if(f_c_val == 5){
-    C= 4
-  }
-  
-  if(f_c_val == 6){
-    C= 4
-  }
-  
-  if(f_c_val == 7){
-    C= 4
-  }
-  
-  if(f_c_val == 8){
-    C= 4
-  }
-  
-  return(C)
-  
-}
+# list of pattern to number of categories C
+ftoc <- c(2, 3, 3, 3, 4, 4, 4, 4)
+names(ftoc) <- c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8")
 
 
 # given conditions get beta coefficients/ mu values
@@ -692,44 +517,10 @@ mu_values <- function(
   bal,
   f_c_val ) {
   
+
   
-  C <-  ftoc(f_c_val)
-  
-  # C  = 2
-  # if(f_c_val == 1){
-  #   C= 2
-  # }
-  # 
-  # # C  = 3
-  # if(f_c_val == 2){
-  #   C= 3
-  # }
-  # 
-  # if(f_c_val == 3){
-  #   C= 3
-  # }
-  # 
-  # if(f_c_val == 4){
-  #   C= 3
-  # }
-  # 
-  # # C  = 4
-  # if(f_c_val == 5){
-  #   C= 4
-  # }
-  # 
-  # if(f_c_val == 6){
-  #   C= 4
-  # }
-  # 
-  # if(f_c_val == 7){
-  #   C= 4
-  # }
-  # 
-  # if(f_c_val == 8){
-  #   C= 4
-  # }
-  
+  C <- ftoc[[f_c_val]]
+
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
@@ -739,16 +530,22 @@ mu_values <- function(
                          bal = bal
                          )
   
-  dfs <- multiple_categories_df(data = dat_app, 
-                             moderator_val  = cat, 
-                             cluster_id = studyid, 
-                             sigma_j_sq_val = sigma_j_sq,
-                             rho_val = rho,
-                             omega_sq_val = omega_sq,
-                             tau_sq_val = tau_sq)
   
-  df_num <- dfs$df_num[1]
-  df_den <- dfs$nu_D[1] - dfs$df_num[1] + 1
+  
+  multiple_cat <- multiple_categories(
+    
+    dat = dat_app,
+    moderator = cat, 
+    cluster = studyid, 
+    sigma_j_sq = sigma_j_sq, 
+    rho = rho,
+    omega_sq = omega_sq, 
+    tau_sq = tau_sq
+  )
+  
+  df_num <- df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[1]]
+  df_den <- df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[2]] - df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[1]] + 1
+  
   
   
   possibly_find_lambda <- possibly(.f = find_lambda, otherwise = NA)
@@ -762,10 +559,13 @@ mu_values <- function(
                                  tol = 0.0001)
   
   if(!is.na(lambda)) {
-    zeta_val <- zeta(pattern =  f_c(pattern = f_c_val), 
-                     lambda = lambda, weights =dfs$W)
+    zeta_val <- zeta(
+                     pattern = f_c_lookup[[f_c_val]], 
+                     lambda = lambda, weights =multiple_cat$W)
     
-    mu_values <- build_mu(pattern =  f_c(pattern = f_c_val), zeta = zeta_val)
+    # beta coefficients 
+    mu_values <-  f_c_lookup[[f_c_val]] * zeta_val
+      
     
   }else{
     mu_values <- NA
@@ -847,7 +647,7 @@ generate_meta <- function(J, tau_sq,
   
   # Study data --------------------------------------------------------------
   
-  C <-  ftoc(f_c_val)
+  C <-  ftoc[[f_c_val]]
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
@@ -907,6 +707,85 @@ generate_meta <- function(J, tau_sq,
   return(meta_reg_dat)
 }
 
+
+
+generate_meta2 <- function(J, tau_sq, 
+                          omega_sq, bal, 
+                          mu_vector,
+                       
+                          rho, P, 
+                          sample_sizes, k_j,
+                          
+                          f_c_val,
+                          sigma_j_sq = NULL,
+                          return_study_params = FALSE,
+                          seed = NULL) {
+  
+  require(dplyr)
+  require(purrr)
+  if (!is.null(seed)) set.seed(seed)
+  
+  # Study data --------------------------------------------------------------
+  
+  C <-  ftoc[[f_c_val]]
+  
+  # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
+  # mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
+  #                        rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val,
+  #                        bal =bal, sigma_j_sq = sigma_j_sq, N = sample_sizes) 
+  
+  X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
+  
+  Xbeta <- as.numeric(X %*% mu_vector)
+  
+  mod_data = mod(C= C, J= J, bal = bal, k_j = k_j) 
+  
+  studyid <- as.factor(mod_data$studyid)
+  n_ES_total <- nrow(X)
+  
+  mod_data <- mod_data %>%
+    group_nest(studyid, .key = "X")
+  
+  
+  u_j = rnorm(J, 0, sqrt(tau_sq))[studyid]
+  v_ij = rnorm(n_ES_total, 0, sqrt(omega_sq))
+  
+  study_data <- 
+    tibble(
+      delta = Xbeta + u_j + v_ij,
+      studyid = studyid
+    ) |>
+    group_by(studyid) |>
+    summarize(
+      delta = list(delta),
+      k_j = n(),
+      .groups = "drop"
+    ) |>
+    mutate(
+      N = sample_sizes,
+      #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
+      Sigma = rep(rho, J)
+    )
+  
+  
+  if (return_study_params) return(study_data)
+  
+  # Generate full meta data  -----------------------------------------------
+  
+  meta_reg_dat <- 
+    study_data |> 
+    {\(.) dplyr::mutate(.,
+                        smds = pmap(select(., -studyid), generate_smd)
+    )}() |>
+    left_join(mod_data, by = "studyid") |>
+    select(-delta, -k_j, -N, -Sigma) |>
+    unnest(cols = c(smds, X))
+  
+  
+  
+  
+  return(meta_reg_dat)
+}
 
 # 
 # test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
@@ -1059,7 +938,7 @@ estimate_model <- function(data = NULL,
       rho = r,
       obs = esid,
       sparse = TRUE,
-      data = dat ## do I need this argument? JEP: I think so.
+      data = dat 
     )
   
   rma_fit <- 
@@ -1157,22 +1036,26 @@ run_sim <- function(iterations,
                     seed = NULL,
                     summarize_results = FALSE){
   
-  # get number of categories
+
+  
+  #in this case power is conditional on study features. basically I specify given set of study features that are
+  #generated randomly, and I want the prob of sig. result to be a value for this given set of study features. 
+  #controlling power given  x means if you specify a different x the mu values will need to change to hold power constant
+  #which is a little perplexing
 
  if (!is.null(seed)) set.seed(seed)
+  
+
  
  results <- map(iterations, ~{
    
                   sample_dat <- n_ES_empirical(pilot_data, J = J)
                   
-                  # JEP: Do this check on the pilot data, outside of the mapping step.
-                  ## NOTE make sure empirical dat has SE and not Var or CHANGE THIS. 
                   if(sigma_j_sq_inc == TRUE){
-                    sigma_j_sq = sample_dat$se_avg^2
+                    sigma_j_sq = sample_dat$sigma_j_sq
                   } else{
                     sigma_j_sq = NULL
                   }
-                  
                   
                   dat <- generate_meta(J = J, 
                                        tau_sq = tau_sq, 
@@ -1217,6 +1100,117 @@ run_sim <- function(iterations,
  }
 }
 
+run_sim2 <- function(iterations,
+                    J, 
+                    tau_sq, 
+                    omega_sq, 
+                    bal, 
+                    #C,
+                    # cor_mu, cor_sd, 
+                    rho, 
+                    P, 
+                    f_c_val,
+                    # sample_sizes, 
+                    #  k_j,
+                    sigma_j_sq_inc = NULL,
+                    pilot_data = NULL,
+                    return_study_params = FALSE,
+                    seed = NULL,
+                    summarize_results = FALSE){
+  
+  # in this case we are specifying power unconditionally. If we were able to we would specify power unconditionally over the distribution of study features that are generated. 
+  #but that is tricky to do since unconditional power will then depend on the whole distribution of study features. 
+  # So, we need to simplfy it a little for the purpose of the sim. still specify range of power of levels for a data set that has all  average study features
+  # meaning now variation in the number of effects or primary study sample sizes. 
+  # using k_j for entire 
+  
+  if (!is.null(seed)) set.seed(seed)
+  
+  
+  # for determining the mu vector. but for k_j and sigma_j_sq and N use the average of empirical distribution. will result in fixed mu values. 
+  # if we generate data that is pretty balanced then true power level should correspond exactly to what we specify. 
+  # if kj and sigma are not constant in data generated, it will not map on exactly but should be in the neighborhood range power of levels. 
+  
+  # used average of the empirical distribution.
+  # will hold the mu values fixed
+  # balanced true level will correspond 
+  # true power won't be exactly of what we specified. 
+  # still have a range of power levels. 
+  
+  N_mean = mean(pilot_data$N) 
+  k_mean = mean(pilot_data$kj)
+  
+  if(sigma_j_sq_inc == TRUE){
+    sigma_j_sq_mean = mean(pilot_data$sigma_j_sq)
+  } else{
+    sigma_j_sq_mean = NULL
+  }
+  
+  
+   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
+                          rho = rho, P = P,
+                          f_c_val = f_c_val,
+                          bal =bal, 
+                          k_j = k_mean,  
+                          sigma_j_sq = sigma_j_sq_mean, 
+                          N = N_mean
+                          )
+  
+  
+   
+   
+  results <- map(iterations, ~{
+    sample_dat <- n_ES_empirical(pilot_data, J = J)
+    
+    if(sigma_j_sq_inc == TRUE){
+      sigma_j_sq = sample_dat$sigma_j_sq
+    } else{
+      sigma_j_sq = NULL
+    }
+   
+    
+    dat <- generate_meta2(J = J, 
+                         tau_sq = tau_sq, 
+                         omega_sq = omega_sq, 
+                         bal = bal, 
+                         #  C = C,
+                         # cor_mu, cor_sd, 
+                         rho = rho, 
+                         P = P, 
+                         sample_sizes = sample_dat$N, 
+                          k_j = sample_dat$kj,
+                        mu_vector = mu_vector,
+                     
+                         f_c_val = f_c_val,
+                         sigma_j_sq = sigma_j_sq,
+                         return_study_params = return_study_params,
+                         seed = seed ## maybe should remove this here and only keep in run_sim
+    )
+    
+    
+    est_res <-  estimate_model(data = dat,
+                               moderator_val = dat$category,
+                               cluster_id = dat$studyid,
+                               delta = dat$g, 
+                               delta_var =  dat$var_g,
+                               es_id = dat$esid,
+                               # formula, 
+                               #  C,  
+                               #  vi,
+                               r= rho,
+                               smooth_vi = TRUE, 
+                               control_list = list()
+    )
+    
+  }) |> dplyr::bind_rows()
+  
+  if (summarize_results) {
+    performance <- sim_performance(results = results)
+    return(performance)
+  } else {
+    return(results)
+  }
+}
 
 ## add in run_sim() and compare to the bundle_sim()
 

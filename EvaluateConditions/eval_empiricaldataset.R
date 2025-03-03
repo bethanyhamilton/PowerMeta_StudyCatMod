@@ -57,7 +57,8 @@ ggplot(Diet_dat, aes(kj, N_ess)) +
 
 dat_kjN <-
   Diet_dat |>
-  select(kj, N = N_ess) |>
+  select(kj, N = N_ess, se_adj) |>
+  mutate(sigma_j_sq = se_adj^2) |> 
   # Excluding effective sample sizes larger than 500
   # and studies with more than 20 outcomes
   filter(N < 500, kj < 20) |>
@@ -67,7 +68,9 @@ range(Diet_dat$kj)
 length(unique(Diet_dat$Authors))
 
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
-
+shape_rate
+shape_rate <- MASS::fitdistr(dat_kjN$sigma_j_sq, "gamma")
+shape_rate
 saveRDS(dat_kjN, "SimFunctions/dat_kjN_Diet_dat.rds")
 # #_______________________________________________________________________  
 #   load("SimFunctions/refdata_igrm.Rdata")
@@ -202,6 +205,7 @@ ggplot(erika_dat, aes(kj, se_avg)) +
 dat_kjN <- 
   erika_dat |>  
   select(kj, N = N_ess, se_avg) |> 
+  mutate(sigma_j_sq = se_avg^2) |> 
   # Excluding effective sample sizes larger than 500 
   # and studies with more than 20 outcomes
   filter(N < 500, kj < 20) |> 
@@ -214,8 +218,100 @@ length(unique(dat_kjN$N))
 saveRDS(dat_kjN, "SimFunctions/dat_kjN_erikadat.rds")
 
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
-
+shape_rate
 shape_rate <- MASS::fitdistr(dat_kjN$se_avg^2, "gamma")
-
+shape_rate
 
 # sum(is.na(erika_dat$total_N))
+
+
+## NOTE make sure empirical dat has reports Var.
+
+#__________________________________________________________________________
+
+#Math data set
+
+## no total N? I may not be able to use this one... 
+
+
+# math -- williams. be cautious of the big studies. studies are CRT --- may have small SEs.
+# need effective sample size rather than the raw sample size
+# use the cluster adjusted sigma_j_sq ****and not N
+
+
+
+math_dat <- read.csv("SimFunctions/data_191_RCTs.csv")
+
+math_dat <- math_dat |> select(CitationID, SampleID, EffectSizeID,yi, vi, L3_StuSamSiz, L3_StuSamSiz_T, L3_StuSamSiz_C, L3_TchSamSiz, L3_TchSamSiz_T, L3_TchSamSiz_C, L3_SchSamSiz, L3_SchSamSiz_T, L3_SchSamSiz_C )
+
+
+math_dat <- 
+  math_dat |> 
+  mutate(
+    ESS = 4 / vi,
+    cluster_id = paste(CitationID, "_", SampleID, sep = "")
+  ) |> 
+  group_by(
+    cluster_id
+  ) |> 
+  summarise(
+    g_avg = mean(yi),
+    se_avg = mean(sqrt(vi)),
+    kj = n(),
+    N_ess = as.integer(round(mean(ESS))),
+   # N_org = as.integer(round(mean(total_N))),
+   # N_diff = N_org - N_ess,
+    .groups = "drop"
+  ) |> 
+  mutate(
+    N_range = cut(N_ess, breaks = c(0,500,1000,5000,10000,50000))
+  )
+
+math_dat |> 
+  count(N_range)
+
+ggplot(math_dat, aes(N_ess)) + 
+  geom_histogram() + 
+  scale_x_log10()
+
+math_dat |> 
+  filter(N_ess <= 500) |> 
+  ggplot(aes(N_ess)) + 
+  geom_histogram()
+
+ggplot(math_dat, aes(kj)) + 
+  geom_histogram()
+
+ggplot(math_dat, aes(se_avg)) + 
+  geom_histogram()
+
+ggplot(math_dat, aes(kj, N_ess)) + 
+  geom_point() + 
+  scale_y_log10()
+
+ggplot(math_dat, aes(kj, se_avg)) + 
+  geom_point() + 
+  scale_y_log10()
+
+
+# Creating dataset used for extracting empirical distributions of nj and N 
+# for each study 
+
+dat_kjN_math <- 
+  math_dat |>  
+  select(kj, N = N_ess, se_avg) |> 
+  mutate(sigma_j_sq = se_avg^2) |> 
+  # Excluding effective sample sizes larger than 500 
+  # and studies with more than 20 outcomes
+  filter(N < 500, kj < 20) |> 
+  as.data.frame()
+
+range(math_dat$kj)
+
+length(unique(dat_kjN_math$N))
+
+saveRDS(dat_kjN_math, "SimFunctions/dat_kjN_mathdat.rds")
+
+shape_rate <- MASS::fitdistr(dat_kjN_math$N, "gamma")
+
+shape_rate <- MASS::fitdistr(dat_kjN_math$se_avg^2, "gamma")
