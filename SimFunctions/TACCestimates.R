@@ -32,21 +32,22 @@ set.seed(0303202571)
 
 
 
- empirical_dat <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- 
- 
-
-tm <- system.time(  results <- plyr::mdply(params,
-                         .fun = run_sim2,
-                         pilot_data = empirical_dat,
-                         sigma_j_sq_inc = FALSE,
-                         .parallel = FALSE))
-
-sum(results$time)
-tm
-
-
-#saveRDS(results, "SimFunctions/TACCtest.rds")
+#  empirical_dat <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+#  
+#  
+# 
+# tm <- system.time(  results <- plyr::mdply(params,
+#                          .fun = run_sim2,
+#                          pilot_data = empirical_dat,
+#                          sigma_j_sq_inc = FALSE,
+#                          .parallel = FALSE))
+# 
+# sum(results$time)
+# tm
+# 
+# results <- list(tm, results)
+# 
+# saveRDS(results, tm, "SimFunctions/TACCtest.rds")
 
 dat_kjN <- readRDS("SimFunctions/TACCtest.rds")
 
@@ -61,14 +62,5 @@ tm_j
 # total compute time in hrs
 as.numeric(sum(tm_j$tot_tm_byJ))/60^2
 
-  
-  # params2 <- params %>% filter(seed == 245717973)
-  # results <- plyr::mdply(params2,
-  #                        .fun = run_sim2,
-  #                        pilot_data = empirical_dat,
-  #                        sigma_j_sq_inc = FALSE,
-  #                        .parallel = FALSE)
-  # 
-  # set.seed(245717973)
-  # sample_dat <- n_ES_empirical(empirical_dat, J = 36)
+
   
