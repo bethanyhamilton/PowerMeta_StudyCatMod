@@ -675,18 +675,24 @@ generate_meta <- function(return_mu = NULL, J, tau_sq,
       delta = Xbeta + u_j + v_ij,
       studyid = studyid
     ) |>
-      group_by(studyid) |>
+    group_by(studyid) |>
     summarize(
       delta = list(delta),
       k_j = n(),
       .groups = "drop"
     ) |>
-      mutate(
-        N = sample_sizes,
-        #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
-        Sigma = rep(rho, J)
-      )
-      
+    mutate(
+      #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
+      Sigma = rep(rho, J)
+    ) |> 
+    mutate(studyid = as.numeric(as.character(studyid))) |> 
+    arrange(studyid) |> 
+    mutate(
+      N = sample_sizes
+    ) |> 
+    mutate(studyid = as.factor(studyid))
+  
+  
     
   if (return_study_params) return(study_data)
   
@@ -764,10 +770,15 @@ generate_meta2 <- function(J, tau_sq,
       .groups = "drop"
     ) |>
     mutate(
-      N = sample_sizes,
       #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
       Sigma = rep(rho, J)
-    )
+    ) |> 
+    mutate(studyid = as.numeric(as.character(studyid))) |> 
+    arrange(studyid) |> 
+    mutate(
+      N = sample_sizes
+    ) |> 
+    mutate(studyid = as.factor(studyid))
   
   
   if (return_study_params) return(study_data)
@@ -960,6 +971,7 @@ estimate_model <- function(data = NULL,
       control = control_list 
     )
   
+  tryCatch({ 
   coef_RVE <-  robust(
     rma_fit, # estimation model above
     cluster = study_id, # define clusters
@@ -984,13 +996,25 @@ estimate_model <- function(data = NULL,
   
  
   
+
+  }, error = function(w) { res<- 
+    tibble(
+      est = NA_real_,
+      est_var = NA_real_,
+      df1 = NA_real_,
+      df2 = NA_real_,
+      p_val = NA_real_, 
+      model = "CHE",
+      var = "RVE"
+    ) %>%
+    bind_rows(res, .)})
+  
   if(!is.null(return_mu)){
     
     res$mu_vector_list <- list(mu_vector)
     
     
-  }
-  
+  } 
   res
   
 }
@@ -1059,7 +1083,7 @@ run_sim <- function(iterations,
   
 
  
- results <- map(iterations, ~{
+ results <- map(1:iterations, ~{
    
                   sample_dat <- n_ES_empirical(pilot_data, J = J)
                   
@@ -1128,6 +1152,9 @@ run_sim2 <- function(iterations,
                     seed = NULL,
                     summarize_results = FALSE){
   
+  #REMOVE LATER
+  start_time = Sys.time()
+  
   # in this case we are specifying power unconditionally. If we were able to we would specify power unconditionally over the distribution of study features that are generated. 
   #but that is tricky to do since unconditional power will then depend on the whole distribution of study features. 
   # So, we need to simplify it a little for the purpose of the sim. still specify range of power of levels for a data set that has all average study features
@@ -1168,7 +1195,7 @@ run_sim2 <- function(iterations,
   
    
    
-  results <- map(iterations, ~{
+  results <- map(1:iterations, ~{
     sample_dat <- n_ES_empirical(pilot_data, J = J)
     
  
@@ -1221,6 +1248,11 @@ run_sim2 <- function(iterations,
     est_res
     
   }) |> dplyr::bind_rows()
+  
+  #REMOVE LATER
+  end_time = Sys.time()
+  
+  results$time <-   end_time - start_time
   
   if (summarize_results) {
     performance <- sim_performance(results = results)

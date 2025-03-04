@@ -571,6 +571,18 @@ df_den <- df_Z - q + 1
                                     seed = NULL,
                                     summarize_results = FALSE))
  
+ tm3 <- system.time(test3 <- run_sim2(iterations = 3, 
+                                      J = 60, tau_sq = (0.40)^2, 
+                                      omega_sq = (0.20)^2, 
+                                      bal = "balanced_j", 
+                                      rho = .8, P = .9, 
+                                      f_c_val = "P8",
+                                      sigma_j_sq_inc = FALSE,
+                                      pilot_data = dat_kjN, 
+                                      return_study_params = FALSE,
+                                      seed = NULL,
+                                      summarize_results = FALSE))
+ 
 
  
  ### Notes

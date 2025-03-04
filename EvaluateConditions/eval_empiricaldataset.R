@@ -238,6 +238,7 @@ shape_rate
 # need effective sample size rather than the raw sample size
 # use the cluster adjusted sigma_j_sq ****and not N
 
+rm(list=ls())
 
 
 math_dat <- read.csv("SimFunctions/data_191_RCTs.csv")
@@ -306,10 +307,7 @@ dat_kjN_math <-
   filter(N < 500, kj < 20) |> 
   as.data.frame()
 
-dat_kjN_math <- dat_kjN_math %>% filter( N < (kj+2))
-
-
-
+dat_kjN_math<- dat_kjN_math |> filter(kj <= N - 2)
 
 range(math_dat$kj)
 
