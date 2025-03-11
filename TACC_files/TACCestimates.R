@@ -71,12 +71,62 @@ tm_j<- results |>
 
 tm_j 
 
+tm_all <- results |> ungroup() |> 
+  summarise(mean_tm_20 = mean(time), 
+            avg_tm_percond_all = mean_tm_20*(2500/20),
+            avg_tm_percond_batch = mean_tm_20*(625/20),
+            mean_tm_1rep = mean_tm_20/20)
+tm_all
+
+
+num_conditions <- 3840
+num_core_pernode <- 48
+
+## whole simulation
+
+
+
+hrs_percond<- as.numeric((tm_all$avg_tm_percond_all))/(60^2)
+
+hrs_acrosscond <-hrs*num_conditions
+
+hrs_per_node <- hrs_acrosscond/num_core_pernode
+
+#across 4 nodes?
+hrs_per_node/4
+
+
 #625 rep per batch
-hrs_perbatch<- (tm_j$avg_tm_per_cond[5]*625)/(60^2)
+hrs_perbatch2<- as.numeric((tm_j$mean_tm_20rep[5]*(625/20))/(60^2))
+
+hrs_perbatch<- as.numeric((tm_all$avg_tm_percond_batch))/(60^2)
+
+hrs_perbatch_acrosscond <- hrs_perbatch*num_conditions
+hrs_perbatch_acrosscond2 <- hrs_perbatch2*num_conditions
+
+
+
+hrs_perbatch_node <- hrs_perbatch_acrosscond/num_core_pernode
+
+hrs_perbatch_node2 <- hrs_perbatch_acrosscond2/num_core_pernode
+
+#across 4 nodes?
+hrs_perbatch_node/4
+
+hrs_perbatch_node2/4
+
 
 # 4 batches -- 3,130 Node Hours available
-total_node_hrs <- hrs_perbatch*4
+total_node_hrs <- hrs_perbatch_acrosscond*4
 total_node_hrs
+
+#number of cores 1 node
+
+hrs_perbatch/48
+
+total_node_hrs/48
+
+#maybe split across nodes?
 
 # total compute time in hrs
 as.numeric(sum(tm_j$tot_tm_byJ))/60^2
