@@ -73,7 +73,7 @@ tic()
 
 res$res <- pmap(res, .f = run_sim2, 
                 pilot_data = empirical_dat,
-                sigma_j_sq_inc = FALSE,)
+                sigma_j_sq_inc = FALSE)
 
 tm <- toc(quiet = TRUE)
 
@@ -84,4 +84,5 @@ tm <- toc(quiet = TRUE)
 res$run_date <- date()
 res$time <- tm$toc - tm$tic
 
+# maybe should add which batch to save file name as well. 
 saveRDS(res, file = paste0("simulation_results_condition", pyl_id, ".rds"))
