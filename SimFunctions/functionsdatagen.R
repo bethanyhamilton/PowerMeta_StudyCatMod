@@ -129,15 +129,11 @@ power_CHE_RVE_study_cat <- function(data = NULL,
 
   #rename functions and objects 
   multiple_cat <- multiple_categories(
-                         
                           dat = data,
                           moderator = moderator_val, 
                           cluster = cluster_id, 
-                          # dat = dat, 
-                          #moderator = moderator, 
-                          #  cluster = cluster,
                           sigma_j_sq = sigma_j_sq, 
-                            rho = rho,omega_sq = omega_sq, tau_sq = tau_sq
+                          rho = rho,omega_sq = omega_sq, tau_sq = tau_sq
                           )
   
 
@@ -362,8 +358,6 @@ power_approximation <- function(C,
                       tau_sq, 
                       omega_sq, 
                       rho, 
-                     # k_j, 
-                     # N = NULL, 
                       sigma_j_sq = NULL,
                       N_mean = NULL,
                       k_mean = NULL,
@@ -371,13 +365,10 @@ power_approximation <- function(C,
                       pilot_data = NULL,
                       iterations = 1L,
                       sample_size_method = c("balanced","stylized","empirical"),
-                     #  mu_vec,
-                     P, ## replaces mu_vec. need to add this to generate mu then we see if it matches at the end..
-                     ## need to add mu in this function so it can match up with sampling method
-                     f_c_val, ### added this to replace mu_vec too. 
-                     
+                      P, 
+                      f_c_val,  
                       bal,
-                     seed = NULL
+                      seed = NULL
                      
 ){
   
@@ -445,8 +436,7 @@ power_approximation <- function(C,
     .id = "samp_method"
   )
   
-  ## currently only capturing power and ncp. maybe also save degrees of freedom?
-  
+
   return(res_CHE_RVE)
   
 }
@@ -460,9 +450,7 @@ run_power <- function(C,
                       omega_sq, 
                       rho, 
                       k_j, 
-                    #  mu_vec,
-                      P, ## need to add this to generate mu then we see if it matches at the end..
-                         ## need to add mu in this function so it can match up with sampling method
+                      P, 
                       f_c_val,
                       bal,
                       N = NULL, 
@@ -475,7 +463,6 @@ run_power <- function(C,
                       rho = rho, P = P, 
                       k_j = k_j, N = N, 
                       f_c_val = f_c_val, 
-                      #sigma_j_sq = NA,
                       bal ="balanced_j" )
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
@@ -631,13 +618,9 @@ generate_smd <- function(delta, k_j, N, Sigma) {
 
 generate_meta <- function(return_mu = NULL, J, tau_sq, 
                           omega_sq, bal, 
-                         # C,
-                         # cor_mu, cor_sd, 
                           rho, P, sample_sizes, k_j,
-                         ### added k_j here for now, but it will probably
-                         # be part of sample_sizes so should remove later. 
-                           f_c_val,
-                         sigma_j_sq = NULL,
+                          f_c_val,
+                          sigma_j_sq = NULL,
                           return_study_params = FALSE,
                           seed = NULL) {
   
@@ -720,10 +703,8 @@ generate_meta <- function(return_mu = NULL, J, tau_sq,
 generate_meta2 <- function(J, tau_sq, 
                           omega_sq, bal, 
                           mu_vector,
-                       
                           rho, P, 
                           sample_sizes, k_j,
-                          
                           f_c_val,
                           sigma_j_sq = NULL,
                           return_study_params = FALSE,
@@ -738,9 +719,7 @@ generate_meta2 <- function(J, tau_sq,
   C <-  ftoc[[f_c_val]]
   
   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
-  # mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
-  #                        rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val,
-  #                        bal =bal, sigma_j_sq = sigma_j_sq, N = sample_sizes) 
+ 
   
   X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
   
@@ -800,16 +779,6 @@ generate_meta2 <- function(J, tau_sq,
   return(meta_reg_dat)
 }
 
-# 
-# test_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
-# meta_dat <- generate_meta(J = 12, tau_sq = .05^2, omega_sq = .05^2, bal = "balanced", C = 4,
-#                                       # cor_mu, cor_sd,
-#                                       rho = .5, P = .9, sample_sizes = test_dat$N, k_j = test_dat$k_j,
-#                                       ### added k_j here for now, but it will probably
-#                                       # be part of sample_sizes so should remove later.
-#                                        f_c_val = 5,
-#                                       return_study_params = FALSE,
-#                                       seed = NULL)
 
 
 # --------------------------------------------------------------------------
@@ -817,60 +786,6 @@ generate_meta2 <- function(J, tau_sq,
 ## the moment. Just need to run CHE-RVE model
 # --------------------------------------------------------------------------
 
-
-# estimate_model <- function(data,formula, C, r= 0.7, smooth_vi = TRUE, control_list = list()
-# ){
-#   
-#   require(dplyr)
-#   
-#   
-#   res <- tibble()
-#   
-#   V_mat <- 
-#     clubSandwich::impute_covariance_matrix(
-#       data$var_g,
-#       cluster = data$studyid,
-#       r = r,
-#       smooth_vi = smooth_vi
-#     )
-#   
-#   rma_fit <- 
-#     purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-#       as.formula(formula),
-#       V_mat, 
-#       random = ~ 1 | studyid / esid,
-#       data = data,
-#       test = "t",
-#       sparse = TRUE,
-#       verbose = FALSE,
-#       control = control_list 
-#     )
-#   
-#   coef_RVE <- clubSandwich::coef_test(rma_fit, vcov = "CR2", cluster = data$studyid)     
-#   
-#   
-#  # V_sep <- vcovCR(rma_fit, cluster = data$studyid, type = "CR2")
-#  # wald_test_results<- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov = V_sep)
-#   
-#   
-#   wald_test_results <- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov =  "CR2")
-#   
-#   
-#   res <- 
-#     tibble(
-#       est = list(coef_RVE$beta),
-#       est_var = list(coef_RVE$SE^2),
-#       df1 = wald_test_results$df_num,
-#       df2 = wald_test_results$df_denom,
-#       p_val = wald_test_results$p_val, 
-#       model = "CHE",
-#       var = "RVE"
-#     ) %>%
-#     bind_rows(res, .)
-#   
-#   res
-#   
-# }
 
 
 
@@ -889,26 +804,6 @@ estimate_model <- function(data = NULL,
   require(dplyr)
   
   
-  res <- tibble()
-  
-  
-  # if (!is.null(data)) {
-  #   moderator_call <- substitute(moderator_val)
-  #   cluster_call <- substitute(cluster_id)
-  #   delta_call <- substitute(delta)
-  #   delta_var_call <- substitute(delta_var)
-  #   es_id_call <- substitute(es_id)
-  #   
-  #   
-  #   env <- list2env(data, parent = parent.frame())
-  #   
-  #   moderator_val <- eval(moderator_call, env)
-  #   cluster_id <- eval(cluster_call, env)
-  #   delta <- eval(delta_call, env)
-  #   delta_var <- eval(delta_var_call, env)
-  #   es_id <- eval(es_id_call, env)
-  #   
-  # }
   if(!is.null(return_mu)){
    
      dat <- data[[1]]
@@ -939,15 +834,6 @@ estimate_model <- function(data = NULL,
  
   C = length(unique(dat$moderator))
   
-  # V_list <- 
-  #   vcalc(
-  #     vi = data$var_g,
-  #     cluster = data$studyid,
-  #     rho = r,
-  #     obs = data$esid,
-  #   #  data = data ## do I need this argument?
-  #     
-  #   )
   
   V_list <- 
     vcalc(
@@ -991,9 +877,9 @@ estimate_model <- function(data = NULL,
       p_val = wald_test_results$p_val, 
       model = "CHE",
       var = "RVE"
-    ) %>%
-    bind_rows(res, .)
+    )
   
+ 
  
   
 
@@ -1006,8 +892,9 @@ estimate_model <- function(data = NULL,
       p_val = NA_real_, 
       model = "CHE",
       var = "RVE"
-    ) %>%
-    bind_rows(res, .)})
+    )
+  
+  })
   
   if(!is.null(return_mu)){
     
@@ -1018,9 +905,7 @@ estimate_model <- function(data = NULL,
   res
   
 }
-# res2 <- estimate_model(data= meta_dat,formula= g ~ 0 +category, C = 4, r= 0.7, smooth_vi = TRUE, control_list = list()
-# )
-# 
+
 
 
 #-----------------------------------------------------------
@@ -1097,14 +982,10 @@ run_sim <- function(iterations,
                                        tau_sq = tau_sq, 
                                        omega_sq = omega_sq, 
                                        bal = bal, 
-                                     #  C = C,
-                                     # cor_mu, cor_sd, 
                                        rho = rho, 
                                        P = P, 
                                        sample_sizes = sample_dat$N, 
                                        k_j = sample_dat$kj,
-                                                   ### added k_j here for now, but it will probably
-                                                   # be part of sample_sizes so should remove later. 
                                        f_c_val = f_c_val,
                                        sigma_j_sq = sigma_j_sq,
                                        return_study_params = return_study_params,
@@ -1119,9 +1000,6 @@ run_sim <- function(iterations,
                                              delta = dat$g, 
                                              delta_var =  dat$var_g,
                                              es_id = dat$esid,
-                                             # formula, 
-                                             #  C,  
-                                             #  vi,
                                              r= rho,
                                              smooth_vi = TRUE, 
                                              return_mu = NULL,
@@ -1153,7 +1031,7 @@ run_sim2 <- function(iterations,
                     summarize_results = FALSE){
   
   #REMOVE LATER
-  start_time = Sys.time()
+  #start_time = Sys.time()
   
   # in this case we are specifying power unconditionally. If we were able to we would specify power unconditionally over the distribution of study features that are generated. 
   #but that is tricky to do since unconditional power will then depend on the whole distribution of study features. 
@@ -1211,8 +1089,6 @@ run_sim2 <- function(iterations,
                          tau_sq = tau_sq, 
                          omega_sq = omega_sq, 
                          bal = bal, 
-                         #  C = C,
-                         # cor_mu, cor_sd, 
                          rho = rho, 
                          P = P, 
                          sample_sizes = sample_dat$N, 
@@ -1232,9 +1108,6 @@ run_sim2 <- function(iterations,
                                delta = dat$g, 
                                delta_var =  dat$var_g,
                                es_id = dat$esid,
-                               # formula, 
-                               #  C,  
-                               #  vi,
                                r= rho,
                                smooth_vi = TRUE, 
                                return_mu = NULL,
@@ -1250,9 +1123,9 @@ run_sim2 <- function(iterations,
   }) |> dplyr::bind_rows()
   
   #REMOVE LATER
-  end_time = Sys.time()
+  #end_time = Sys.time()
   
-  results$time <-   end_time - start_time
+  #results$time <-   end_time - start_time
   
   if (summarize_results) {
     performance <- sim_performance(results = results)
@@ -1262,18 +1135,7 @@ run_sim2 <- function(iterations,
   }
 }
 
-## add in run_sim() and compare to the bundle_sim()
 
-# library(simhelpers)
-# 
-# run_sim <- bundle_sim(f_generate = generate_meta, 
-#                       f_analyze = estimate_model, 
-#                      # f_summarize = calc_performance,
-#                       reps_name = "iterations", 
-#                       seed_name = "seed",
-#                       summarize_opt_name = NULL)
-# 
-# args(run_sim)
 
 
 # Need to add run_sim functions, performance criteria and functions associated with the approximation
