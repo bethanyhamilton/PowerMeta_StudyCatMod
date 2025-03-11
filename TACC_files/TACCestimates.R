@@ -72,10 +72,11 @@ tm_j<- results |>
 tm_j 
 
 #625 rep per batch
-(4121.832  *625)/60^2
+hrs_perbatch<- (tm_j$avg_tm_per_cond[5]*625)/(60^2)
 
 # 4 batches -- 3,130 Node Hours available
-566.6538*4
+total_node_hrs <- hrs_perbatch*4
+total_node_hrs
 
 # total compute time in hrs
 as.numeric(sum(tm_j$tot_tm_byJ))/60^2
