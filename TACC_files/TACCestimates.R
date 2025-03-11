@@ -61,7 +61,7 @@ set.seed(0303202571)
 # 
 # saveRDS(results, tm, "SimFunctions/TACCtest.rds")
 
-results <- readRDS("SimFunctions/TACCtest.rds")
+results <- readRDS("TACC_files/TACCtest.rds")
 
 tm_j<- results |> 
   group_by(J) |> 
@@ -70,6 +70,12 @@ tm_j<- results |>
             tot_tm_byJ = avg_tm_per_cond*768) 
 
 tm_j 
+
+#625 rep per batch
+(4121.832  *625)/60^2
+
+# 4 batches -- 3,130 Node Hours available
+566.6538*4
 
 # total compute time in hrs
 as.numeric(sum(tm_j$tot_tm_byJ))/60^2
