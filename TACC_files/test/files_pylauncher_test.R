@@ -27,8 +27,7 @@ params
 
 params <- params |>
   mutate(iteration = total_reps/batches,
-         seed = round(runif(1) * 2^30) + 1:n(),
-         PYL_ID = row_number()) |> 
+         seed = round(runif(1) * 2^30) + 1:n()) |> 
   as_tibble()
 
 batch_file <-  1
@@ -39,7 +38,8 @@ params2$batch <- NULL
 
 params2 <- params2 |> 
   filter(J == 72) |> 
-  distinct(P, bal,  .keep_all = TRUE)
+  distinct(P, bal,  .keep_all = TRUE) |> 
+  mutate(PYL_ID = row_number())
   #slice(1:12)
 
 FileName <- paste("TACC_files/test/pyl_id_values", "_test",".csv",sep="")
