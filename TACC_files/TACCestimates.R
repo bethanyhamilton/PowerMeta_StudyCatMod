@@ -122,7 +122,6 @@ total_node_hrs
 
 #number of cores 1 node
 
-hrs_perbatch/48
 
 total_node_hrs/48
 

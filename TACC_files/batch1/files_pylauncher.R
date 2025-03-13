@@ -44,7 +44,7 @@ FileName2 <- paste("TACC_files/command_lines",batch_file,sep="")
 file_conn <- file(FileName2, "w")
 
 # Loop through the numbers 1 to 3840 and write the commands to the file
-for (i in 1:3840) {
+for (i in 1:dim(params2)[1]) {
   # Construct the command string
   command <- paste("Rscript run_sim_study.R PYL_ID", i)
   

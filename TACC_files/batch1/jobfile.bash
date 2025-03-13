@@ -20,6 +20,6 @@ module load python3 # or newer
 #pip install paramiko
 
 # load R module
-module load Rstats/4.4.2
+module load Rstats/4.0.3
 
 python pmcmlauncher.py
