@@ -7,7 +7,7 @@ library(haven)
 
 
 Diet_dat <-
-  read_dta("SimFunctions/RER_cluster.dta")
+  read_dta("EvaluateConditions/RER_cluster.dta")
 
 
 
@@ -71,7 +71,7 @@ shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 shape_rate
 shape_rate <- MASS::fitdistr(dat_kjN$sigma_j_sq, "gamma")
 shape_rate
-saveRDS(dat_kjN, "SimFunctions/dat_kjN_Diet_dat.rds")
+saveRDS(dat_kjN, "EvaluateConditions/dat_kjN_Diet_dat.rds")
 # #_______________________________________________________________________  
 #   load("SimFunctions/refdata_igrm.Rdata")
 #   
@@ -132,9 +132,8 @@ saveRDS(dat_kjN, "SimFunctions/dat_kjN_Diet_dat.rds")
 #   range(ref_data$kj)
 #________________________________________________________________________
 
-erika_dat <- read.csv("SimFunctions/final_dataset.csv")
+erika_dat <- read.csv("EvaluateConditions/final_dataset.csv")
 
-#  load("SimFunctions/all_data.Rdata")
 
 
 erika_dat <- erika_dat |> mutate(
@@ -215,7 +214,7 @@ range(erika_dat$kj)
 
 length(unique(dat_kjN$N))
 
-saveRDS(dat_kjN, "SimFunctions/dat_kjN_erikadat.rds")
+saveRDS(dat_kjN, "EvaluateConditions/dat_kjN_erikadat.rds")
 
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 shape_rate
@@ -241,7 +240,7 @@ shape_rate
 rm(list=ls())
 
 
-math_dat <- read.csv("SimFunctions/data_191_RCTs.csv")
+math_dat <- read.csv("EvaluateConditions/data_191_RCTs.csv")
 
 math_dat <- math_dat |> select(CitationID, SampleID, EffectSizeID,yi, vi, L3_StuSamSiz, L3_StuSamSiz_T, L3_StuSamSiz_C, L3_TchSamSiz, L3_TchSamSiz_T, L3_TchSamSiz_C, L3_SchSamSiz, L3_SchSamSiz_T, L3_SchSamSiz_C )
 
@@ -295,6 +294,9 @@ ggplot(math_dat, aes(kj, se_avg)) +
   scale_y_log10()
 
 
+## minimal SE -- something in neighborhood of this. 
+2/sqrt(500) 
+
 # Creating dataset used for extracting empirical distributions of nj and N 
 # for each study 
 
@@ -318,3 +320,6 @@ saveRDS(dat_kjN_math, "SimFunctions/dat_kjN_mathdat.rds")
 shape_rate <- MASS::fitdistr(dat_kjN_math$N, "gamma")
 
 shape_rate <- MASS::fitdistr(dat_kjN_math$se_avg^2, "gamma")
+
+# density plot of se^2 and gamma distribution. 
+# qqplot 

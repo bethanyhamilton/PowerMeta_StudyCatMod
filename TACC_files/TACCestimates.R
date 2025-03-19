@@ -83,12 +83,12 @@ num_conditions <- 3840
 num_core_pernode <- 48
 
 ## whole simulation
-
+## calcul
 
 
 hrs_percond<- as.numeric((tm_all$avg_tm_percond_all))/(60^2)
 
-hrs_acrosscond <-hrs*num_conditions
+hrs_acrosscond <-hrs_percond*num_conditions
 
 hrs_per_node <- hrs_acrosscond/num_core_pernode
 

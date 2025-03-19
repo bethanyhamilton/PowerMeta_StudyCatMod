@@ -1,4 +1,6 @@
-library(tidyverse)
+library(dplyr)
+library(purrr)
+library(tidyr)
 library(metafor)
 library(clubSandwich)
 library(mvtnorm)
@@ -77,7 +79,7 @@ rm(list=ls())
 source("SimFunctions/functionsdatagen.R")
 set.seed(2202025)
 
-dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
 dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 
@@ -203,7 +205,7 @@ df_den <- df_Z - q + 1
  # multiple of 12 for number of studies -- unbalanced kj
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
  set.seed(6535566)
  
 
@@ -234,7 +236,7 @@ df_den <- df_Z - q + 1
  # unbalanced J -- four category , 24 studies
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
  set.seed(65436)
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
@@ -358,40 +360,29 @@ df_den <- df_Z - q + 1
  
  meta_dat5  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
  #------------------------------------------
- 
- #### this seed resulted in an error. Some combination of k_j and N result in 
- #### an error in cov_mat object
- 
- ### seed with error...the study with 14 effects
- ## k_j=14, N= 6, Sigma = .5
- #Sigma <- Sigma + diag(1 - Sigma, nrow = k_j)
- #cov_mat <- as.matrix(rWishart(n = 1, df = N - 2, Sigma = Sigma)[,,1])
- 
- #Solution: df >= dimension
- #NEED TO PREPROCESS DATA SO  N >= kj + 2
+
 
  rm(list=ls())
  
  ## df greater kj 
- # source("SimFunctions/functionsdatagen.R")
- # dat_kjN <- readRDS("SimFunctions/dat_kjN_erikadat.rds")
- # set.seed(2122025)
- # dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
- # 
- # dat_kjN_samp <- dat_kjN_samp |>  filter(kj == 12)
- # meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
- #                            omega_sq = .05^2, 
- #                            bal = "balanced_j", 
- #                            #C = 4,
- #                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
- #                            k_j = dat_kjN_samp$kj,
- #                            sigma_j_sq = NULL,
- #                            f_c_val = "P5",
- #                            return_study_params = FALSE,
- #                            seed = NULL)
- # 
- # 
- # head(meta_dat2)
+ source("SimFunctions/functionsdatagen.R")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ set.seed(2122025)
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+
+ meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2,
+                            omega_sq = .05^2,
+                            bal = "balanced_j",
+                            #C = 4,
+                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N,
+                            k_j = dat_kjN_samp$kj,
+                            sigma_j_sq = NULL,
+                            f_c_val = "P5",
+                            return_study_params = FALSE,
+                            seed = NULL)
+
+
+ head(meta_dat2)
  # 
 
  #------------------------------------------------------------------------------------ 
@@ -526,13 +517,12 @@ df_den <- df_Z - q + 1
  ### ------------------------------------------- ### 
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
- #dat_kjN <- readRDS("SimFunctions/dat_kjN.rds")
- 
+
  
  ## need to test with different empirical data set that has SE
  ## also should capture the mu_values from the data generation. 
 
- dat_kjN <- readRDS("SimFunctions/dat_kjN_Diet_dat.rds")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
  
  test <- run_sim(iterations = 1, 
                  J = 24, tau_sq = .05^2, 
@@ -594,3 +584,5 @@ df_den <- df_Z - q + 1
  tm1[[3]]*2500*3840
  
  tm2[[3]]*2500*3840
+
+ 

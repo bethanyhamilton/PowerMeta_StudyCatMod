@@ -1,12 +1,12 @@
-Rscript run_sim_study.R PYL_ID 1
-Rscript run_sim_study.R PYL_ID 2
-Rscript run_sim_study.R PYL_ID 3
-Rscript run_sim_study.R PYL_ID 4
-Rscript run_sim_study.R PYL_ID 5
-Rscript run_sim_study.R PYL_ID 6
-Rscript run_sim_study.R PYL_ID 7
-Rscript run_sim_study.R PYL_ID 8
-Rscript run_sim_study.R PYL_ID 9
-Rscript run_sim_study.R PYL_ID 10
-Rscript run_sim_study.R PYL_ID 11
-Rscript run_sim_study.R PYL_ID 12
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 1
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 2
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 3
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 4
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 5
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 6
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 7
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 8
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 9
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 10
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 11
+apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID 12

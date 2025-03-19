@@ -42,7 +42,7 @@ params2 <- params2 |>
   mutate(PYL_ID = row_number())
   #slice(1:12)
 
-FileName <- paste("TACC_files/test/pyl_id_values", "_test",".csv",sep="")
+FileName <- paste("TACC_files/test/PowStudCatMod-container_test/pyl_id_values", "_test",".csv",sep="")
 
 
 
@@ -57,13 +57,33 @@ FileName2 <- paste("TACC_files/test/command_lines","_test",sep="")
 file_conn <- file(FileName2, "w")
 
 # Loop through the numbers 1 to 3840 and write the commands to the file
+# for (i in 1:dim(params2)[1]) {
+#   # Construct the command string
+#   command <- paste("Rscript run_sim_study.R PYL_ID", i)
+# 
+#   # Write the command to the file
+#   writeLines(command, file_conn)
+# }
+
+
+# for (i in 1:dim(params2)[1]) {
+#   # Construct the command string
+#   command <- paste("mkdir -p myoutput && cd myoutput && apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID", i)
+#   
+#   # Write the command to the file
+#   writeLines(command, file_conn)
+# }
+
 for (i in 1:dim(params2)[1]) {
   # Construct the command string
-  command <- paste("Rscript run_sim_study.R PYL_ID", i)
+  command <- paste("apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID", i)
   
   # Write the command to the file
   writeLines(command, file_conn)
 }
+
+
+
 
 # Close the connection to the file
 close(file_conn)
