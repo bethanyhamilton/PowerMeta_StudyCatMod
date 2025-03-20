@@ -27,4 +27,6 @@ COPY pyl_id_values_test.csv /SimFunctions/pyl_id_values_test.csv
 
 RUN chmod +rx /SimFunctions/pyl_id_values_test.csv
 
+RUN export PATH=/SimFunctions:$PATH
+
 ENV PATH="/SimFunctions:$PATH"

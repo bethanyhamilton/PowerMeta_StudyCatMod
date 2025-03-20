@@ -18,7 +18,7 @@ design_factors <- list(
 
 
 batches <- 1
-total_reps <- 2500
+total_reps <- 3
 
 
 params <- expand.grid(c(design_factors, list(batch = 1:batches)))
