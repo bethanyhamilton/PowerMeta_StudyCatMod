@@ -11,11 +11,13 @@
 #SBATCH -A TG-MTH250014 #my project
 
 module load python/3.9.18 
-#pip install paramiko
+pip install paramiko
 
 module spider apptainer
 
 module load tacc-apptainer
+
+module load pylauncher/5.1.1 
 
 apptainer pull docker://bethanyhamilton/powstudcatmod-container_test:v0
 
