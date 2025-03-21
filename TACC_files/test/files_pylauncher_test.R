@@ -76,7 +76,7 @@ file_conn <- file(FileName2, "w")
 
 for (i in 1:dim(params2)[1]) {
   # Construct the command string
-  command <- paste("apptainer exec cd /SimFunctions; Rscript run_sim_study.R PYL_ID", i)
+  command <- paste('apptainer run /bin/bash -c "cd /SimFunctions; Rscript run_sim_study.R PYL_ID ', i, '"', sep = "")
   
   # Write the command to the file
   writeLines(command, file_conn)
