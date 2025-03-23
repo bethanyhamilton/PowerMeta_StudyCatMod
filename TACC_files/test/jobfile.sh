@@ -19,6 +19,6 @@ module load tacc-apptainer
 
 module load pylauncher/5.1.1 
 
-apptainer pull docker://bethanyhamilton/powstudcatmod-container_test:v0
+apptainer pull docker://bethanyhamilton/powstudcatmod_test:v3
 
 python3 /work2/08147/bethanyh/stampede3/test123/pmcmlauncher.py

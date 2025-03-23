@@ -1,51 +1,25 @@
 args <- commandArgs(trailingOnly = TRUE)
 
 # Load the CSV file containing PYL_ID and the associated values
-all_params <- read.csv("pyl_id_values_test.csv")  
+all_params <- read.csv("/home/r-environment/pyl_id_values_test.csv")  
 
 #-------------------------------------------------------------------------------
 # Parse command line argument
 
-# row_to_run <- 
-#   args |>
-#   paste(collapse = " ") |>
-#   stringr::str_extract("batch [0-9]+") |>
-#   stringr::str_sub(7, -1) |>
-#   as.integer()
 
-
-if (length(args) < 2) {
-  stop("PYL_ID needs to be an argument")
+if (length(args) < 3) {
+  stop("PYL_ID and output file path need to be arguments")
 }
 
 # Extract PYL_ID from command-line arguments
 pyl_id <- as.integer(args[2])  # argument is in the form "PYL_ID #"
 
+# Extract output file path from the third argument
+output_path <- args[3]  # Argument is the file path for saving the result
+
 
 #-------------------------------------------------------------------------------
 # Source packages and functions
-
-
-# require(devtools)
-# install_version("metafor", version = "4.8.0", repos = "http://cran.us.r-project.org")
-# library(metafor)
-
-# if(!require(pacman)){
-#   install.packages("pacman")
-# }
-# 
-# p_load(
-#   tidyverse, 
-#   clubSandwich,
-#   metafor,
-#   mvtnorm,
-#   purrr,
-#   future,
-#   furrr#,
-# #  snow,
-# #  doSNOW
-# )
-
 
 
 library(dplyr)
@@ -56,13 +30,13 @@ library(clubSandwich)
 library(mvtnorm)
 
 
-source("functionsdatagen.R")
-#source("SimFunctions/run_sim.R")
+source("/home/r-environment/functionsdatagen.R")
+
 
 #-------------------------------------------------------------------------------
 # Load experimental design parameters
 
-empirical_dat <- readRDS("dat_kjN_mathdat.rds")
+empirical_dat <- readRDS("/home/r-environment/dat_kjN_mathdat.rds")
 
 
 #-------------------------------------------------------------------------------
@@ -87,5 +61,9 @@ tm <- system.time(res$res <- pmap(res, .f = run_sim2,
 res$run_date <- date()
 res$time <- as.numeric(tm[3])
 
-# maybe should add which batch to save file name as well. 
-saveRDS(res, file = paste0("simulation_results_condition", "_test_", pyl_id, ".rds"))
+file_name <- paste0("simulation_results_condition_test_", pyl_id, ".rds")
+
+full_output_path <- file.path(output_path, file_name)
+
+saveRDS(res, file = full_output_path)
+
