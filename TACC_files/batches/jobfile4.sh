@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -J powstudcatmod_1 #Job name
-#SBATCH -o powstudcatmod_1.o%j  # Name of outputfile
-#SBATCH -e powstudcatmod_1.e%j  # Name of stderr error file
+#SBATCH -J powstudcatmod_4 #Job name
+#SBATCH -o powstudcatmod_4.o%j  # Name of outputfile
+#SBATCH -e powstudcatmod_4.e%j  # Name of stderr error file
 #SBATCH -p skx		  # Queue (partition) name
 #SBATCH -N 4           # Total number of nodes
 #SBATCH --ntasks-per-node 48              # Total # of mpi tasks

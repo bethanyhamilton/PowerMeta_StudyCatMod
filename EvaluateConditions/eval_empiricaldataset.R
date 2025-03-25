@@ -321,5 +321,13 @@ shape_rate <- MASS::fitdistr(dat_kjN_math$N, "gamma")
 
 shape_rate <- MASS::fitdistr(dat_kjN_math$se_avg^2, "gamma")
 
+library(fitdistrplus)
+dist <- fitdistrplus::fitdist(dat_kjN_math$N, "gamma")
+plot(dist)
+
+dist <- fitdistrplus::fitdist(dat_kjN_math$sigma_j_sq, "gamma")
+plot(dist)
+
+
 # density plot of se^2 and gamma distribution. 
 # qqplot 
