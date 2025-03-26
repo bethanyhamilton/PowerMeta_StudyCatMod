@@ -23,4 +23,4 @@ RUN chmod +rx /home/r-environment/run_sim_study.R
 COPY dat_kjN_mathdat.rds /home/r-environment/dat_kjN_mathdat.rds
 
 # Run the R script
-CMD R -e "source('/home/r-environment/run_sim_study.R')" --args PYL_ID 1 
+CMD R -e "source('/home/r-environment/run_sim_study.R')" --args PYL_ID 1 "/home/r-environment/output" 1
