@@ -54,11 +54,14 @@ multiple_categories <- function(data= NULL,
   c <-  length(unique(dat$moderator))
   q <-  c - 1
   
+  
   study_level_data <-  dat |> 
-    group_by(moderator) |>
-    mutate(mean_var = mean(sigma_j_sq), k_j = n()) |> 
-    ungroup() |> 
-    select(-sigma_j_sq)
+        group_by(cluster, moderator) |>
+        summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') |> 
+    mutate(tau_sq = tau_sq_val,
+           omega_sq = omega_sq_val, 
+           rho = rho_val)
+
   
   
   by_category <-  
