@@ -373,6 +373,7 @@ power_approximation <- function(
                                 P, 
                                 f_c_val,  
                                 bal,
+                                average_power = TRUE,
                                 seed = NULL
                                 
 ){
@@ -444,6 +445,21 @@ power_approximation <- function(
        J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho, bal = bal, P =P, f_c_val = f_c_val,
        .id = "samp_method"
   )
+  
+  
+  if (average_power) {
+    res_CHE_RVE <- res_CHE_RVE |> 
+      mutate(samp_method = str_remove(samp_method, "[:digit:]+")) |> 
+      group_by(samp_method) |> 
+      summarise(
+        across(c(power, ncp, df_den), mean),
+        .groups = "drop"
+      )
+  } else {
+    res_CHE_RVE <- res_CHE_RVE |> 
+      mutate(samp_method = str_remove(samp_method, "[:digit:]+"))
+  }
+  
   
   return(res_CHE_RVE)
   

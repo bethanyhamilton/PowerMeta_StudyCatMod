@@ -4,6 +4,7 @@ library(tidyr)
 library(metafor)
 library(clubSandwich)
 library(mvtnorm)
+library(stringr)
 
 
 #######Parameters 
@@ -101,6 +102,8 @@ test <- power_approximation(
   P = .5,
   f_c_val = "P5",
   bal = "balanced_j",
+  average_power = FALSE,
+    
   seed = NULL)
 test
 
