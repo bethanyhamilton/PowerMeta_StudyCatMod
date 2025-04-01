@@ -6,11 +6,9 @@ library(purrr)
 library(tidyr)
 library(mvtnorm)
 library(plyr)
-library(future)
-library(furrr)
 
 
-plan(multisession)
+
 set.seed(2503025)
 
 dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
@@ -29,10 +27,10 @@ design_factors <- list(
 )
 
 
-pow_params <- 
+params <- 
   expand.grid(design_factors)
 
-pow_params <- pow_params |>
+params <- params |>
   dplyr::mutate(
          seed = round(runif(1) * 2^30) + 1:n()
   ) 
@@ -52,8 +50,8 @@ pow_params <- pow_params |>
 
 
 
-tm <- system.time(app_results <-
-  pow_params %>%
+tm <- system.time(apprx_results <-
+      params %>%
   mutate(res = future_pmap(., .f = purrr::possibly(power_approximation, otherwise = data.frame()),
                            N_mean = mean(dat_kjN$N),
                            k_mean =  mean(dat_kjN$kj),
@@ -67,12 +65,8 @@ tm <- system.time(app_results <-
   tidyr::unnest(cols = res) )
 
 tm
-app_results
+apprx_results
 
-pow_params %>%
-  anti_join(app_results) %>%
-  nrow() %>% 
-  identical(0L)
 
 
 session_info <- sessionInfo()
@@ -80,7 +74,7 @@ run_date <- date()
 
 
 
-save(tm,   pow_params, app_results, session_info, run_date, file = "Approximations/approximation_resutls.RData")
+save(tm, params, apprx_results, session_info, run_date, file = "Approximations/approximation_resutls.RData")
 
 
 

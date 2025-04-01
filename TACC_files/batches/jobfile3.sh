@@ -21,4 +21,4 @@ module load pylauncher/5.1.1
 
 apptainer pull docker://bethanyhamilton/powstudcatmod:v0
 
-python3 /work2/08147/bethanyh/stampede3/test123/pmcmlauncher3.py
+python3 /work2/08147/bethanyh/stampede3/work_files/pmcmlauncher3.py

@@ -605,9 +605,9 @@ df_den <- df_Z - q + 1
  5*2*2*2*6*8*2 
  #3840
  
- #time in sec for run (with J=72) (one core/4.80 GHz) * number reps (2500) * conditions  
- tm1[[3]]*2500*3840
+ #time in sec for run (with J=72) (one core/4.80 GHz) * number reps (2500) * conditions  node hours (48 cores per node)
+ ((tm1[[3]]*2500*3840)/48)/60^2
  
- tm2[[3]]*2500*3840
+ 
 
  

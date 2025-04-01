@@ -1,12 +1,10 @@
 args <- commandArgs(trailingOnly = TRUE)
 
-
-
 #-------------------------------------------------------------------------------
 # Parse command line argument
 
 
-if (length(args) < 3) {
+if (length(args) < 4) {
   stop("PYL_ID, output file path, and batch need to be arguments")
 }
 
@@ -17,13 +15,34 @@ pyl_id <- as.integer(args[2])  # argument is in the form "PYL_ID #"
 output_path <- args[3]  # Argument is the file path for saving the result
 
 # Extract batch number from the fourth argument
-batch_file <- as.integer(args[4])  # Argument is the file path for saving the result
+batch_file <- as.integer(args[4])  
+
 
 #-------------------------------------------------------------------------------
+# Source packages and functions
+
+
 library(dplyr)
+library(purrr)
+library(tidyr)
+library(metafor)
+library(clubSandwich)
+library(mvtnorm)
+
+
+source("/home/r-environment/functionsdatagen.R")
+#-------------------------------------------------------------------------------
+# Load experimental design parameters
+
+empirical_dat <- readRDS("/home/r-environment/dat_kjN_mathdat.rds")
+
+
+#-------------------------------------------------------------------------------
 
 # Load the CSV file containing PYL_ID and the associated values
 #all_params <- read.csv("/home/r-environment/pyl_id_values_test.csv")  
+
+set.seed(03242025)
 
 design_factors <- list(
   J = c(24, 36, 48, 60, 72),
@@ -53,43 +72,18 @@ params <- params |>
 params2 <- params %>% filter(batch == batch_file)
 params2$batch <- NULL
 
-
-#-------------------------------------------------------------------------------
-# Source packages and functions
-
-
-library(dplyr)
-library(purrr)
-library(tidyr)
-library(metafor)
-library(clubSandwich)
-library(mvtnorm)
-
-
-source("/home/r-environment/functionsdatagen.R")
-
-
-#-------------------------------------------------------------------------------
-# Load experimental design parameters
-
-empirical_dat <- readRDS("/home/r-environment/dat_kjN_mathdat.rds")
-
-
 #-------------------------------------------------------------------------------
 # run simulations for specified batch
-res <- subset(all_params, PYL_ID == pyl_id)
+res <- subset(params2, PYL_ID == pyl_id)
 
 #res$batch <- NULL
 res$PYL_ID <- NULL
 
 
 
-tm <- system.time(res$res <- pmap(res, .f = run_sim2, 
+tm <- system.time(res$res <- pmap(res, .f = run_sim, 
                 pilot_data = empirical_dat,
-                sigma_j_sq_inc = FALSE))
-
-
-
+                sigma_j_sq_inc = TRUE))
 
 #-------------------------------------------------------------------------------
 # Save results and details

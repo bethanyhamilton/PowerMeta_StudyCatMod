@@ -244,16 +244,6 @@ zeta <- function(pattern, lambda, weights){
 
 
 # design matrix 
-
-### options for balance of the number of studies across categories:
-#### 1. set scenarios where each J_c add up a multiple of J = 12
-#### 2. fractions in combination with multiple of J = 12 that result in whole numbers
-#### 3. stochastic assignment  --  where each category has a probability of getting assigned to a study
-
-#### will go with 2 since we can see what is going on exactly with different combinations of factors. 
-#### constrained to multiples of 12.to compare across balanced and unbalanced conditions -- probably need to workshop this more
-#follow rule -- always increasing in number of studies. smaller number of studies will be on smallest mu. 
-
 design_matrix <- function(C, J, bal, k_j){
 
   categories <- mod(C = C, J = J, bal = bal, k_j = k_j)
@@ -805,8 +795,6 @@ generate_meta <- function(J, tau_sq,
 # --------------------------------------------------------------------------
 
 
-
-
 estimate_model <- function(data = NULL,
                           # return_mu = NULL,
                            moderator_val,
@@ -879,7 +867,7 @@ estimate_model <- function(data = NULL,
   coef_RVE <-  robust(
     rma_fit, # estimation model above
     cluster = study_id, # define clusters
-    clubSandwich = TRUE # use CR2 adjustment
+    clubSandwich = TRUE 
   )
   
   wald_test_results <- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov =  "CR2")
@@ -978,11 +966,6 @@ estimate_model <- function(data = NULL,
 #   
 #  require(dplyr)
 #   
-#   #in this case power is conditional on study features. basically I specify given set of study features that are
-#   #generated randomly, and I want the prob of sig. result to be a value for this given set of study features. 
-#   #controlling power given  x means if you specify a different x the mu values will need to change to hold power constant
-#   #which is a little perplexing
-# 
 #  if (!is.null(seed)) set.seed(seed)
 #   
 # 
@@ -1049,26 +1032,12 @@ run_sim <- function(iterations,
                     seed = NULL,
                     summarize_results = FALSE){
   
-  #REMOVE LATER
-  #start_time = Sys.time()
-  
-  # in this case we are specifying power unconditionally. If we were able to we would specify power unconditionally over the distribution of study features that are generated. 
-  #but that is tricky to do since unconditional power will then depend on the whole distribution of study features. 
-  # So, we need to simplify it a little for the purpose of the sim. still specify range of power of levels for a data set that has all average study features
-  # meaning now variation in the number of effects or primary study sample sizes. 
+
   
   if (!is.null(seed)) set.seed(seed)
   
   
-  # for determining the mu vector. but for k_j and sigma_j_sq and N use the average of empirical distribution. will result in fixed mu values. 
-  # if we generate data that is pretty balanced then true power level should correspond exactly to what we specify. 
-  # if kj and sigma are not constant in data generated, it will not map on exactly but should be in the neighborhood range power of levels. 
-  
-  # used average of the empirical distribution.
-  # will hold the mu values fixed
-  # balanced true level will correspond 
-  # true power won't be exactly of what we specified. 
-  # still have a range of power levels. 
+
   
   N_mean = mean(pilot_data$N) 
   k_mean = mean(pilot_data$kj)
@@ -1117,7 +1086,7 @@ run_sim <- function(iterations,
                          f_c_val = f_c_val,
                          sigma_j_sq = sigma_j_sq,
                          return_study_params = return_study_params,
-                         seed = seed ## maybe should remove this here and only keep in run_sim
+                         seed = seed 
     )
     
     
@@ -1146,11 +1115,11 @@ run_sim <- function(iterations,
   
   #results$time <-   end_time - start_time
   
-  if (summarize_results) {
-    performance <- sim_performance(results = results)
-    return(performance)
-  } else {
-    return(results)
-  }
+  # if (summarize_results) {
+  #   performance <- sim_performance(results = results)
+  #   return(performance)
+  # } else {
+  #   return(results)
+  # }
 }
 
