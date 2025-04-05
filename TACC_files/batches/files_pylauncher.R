@@ -31,7 +31,7 @@ params <- params |>
   ungroup() |> 
   as_tibble()
 
-batch_file <-  1
+batch_file <-  4
 params2 <- params %>% filter(batch == batch_file)
 params2$batch <- NULL
 
@@ -58,7 +58,7 @@ file_conn <- file(FileName2, "w")
 
 for (i in 1:dim(params2)[1]) {
   # Construct the command string
-  command <- paste('apptainer run --bind /scratch/08147/bethanyh/pylauncher_out:/home/r-environment/output /scratch/08147/bethanyh/powstudcatmod_v0.sif R -e "source(\'/home/r-environment/run_sim_study.R\')" --args PYL_ID ', params2$PYL_ID[i], ' "/home/r-environment/output" ', batch_file ,sep = "")
+  command <- paste('apptainer run --bind /scratch/08147/bethanyh/pylauncher_out', batch_file,':/home/r-environment/output /scratch/08147/bethanyh/powstudcatmod_v0.sif R -e "source(\'/home/r-environment/run_sim_study.R\')" --args PYL_ID ', params2$PYL_ID[i], ' "/home/r-environment/output" ', batch_file ,sep = "")
 
   # Write the command to the file
   writeLines(command, file_conn)

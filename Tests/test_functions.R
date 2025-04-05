@@ -501,6 +501,120 @@ df_den <- df_Z - q + 1
  all.equal(myfunc_output,metafor_output)
  all.equal(test_output$est_var, list(coef_RVE2$se^2))
  
+ 
+ #----------------------------------------------------
+ # test if it uses rma.uni() when only kj = 1
+ 
+ 
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ 
+ 
+ set.seed(1232024)
+ 
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+ 
+ mu_vector <- mu_values(J = 12, tau_sq =05^2, 
+                        omega_sq =.05^2,
+                        rho = .5, P = .9, 
+                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
+                        f_c_val = "P5", 
+                        sigma_j_sq = dat_kjN_samp$se_avg^2,
+                        bal ="balanced_j" )
+ 
+ 
+ 
+ 
+ meta_dat <- generate_meta(
+   J = 12,
+   tau_sq = .05^2,
+   omega_sq = .05^2,
+   bal = "balanced_j",
+   mu_vector = mu_vector,
+   rho = .5,
+   P = .9,
+   sample_sizes = dat_kjN_samp$N,
+   k_j = dat_kjN_samp$kj,
+   f_c_val = "P5",
+   return_study_params = FALSE,
+   seed = NULL
+ )
+ 
+ 
+ 
+ meta_dat_uni <- meta_dat |> 
+   group_by(studyid) |> 
+   slice(1:1) |> 
+   ungroup()
+ 
+ 
+ test_output <- estimate_model( 
+   #formula= g ~ 0 + category, 
+   moderator_val = meta_dat_uni$category,
+   cluster_id = meta_dat_uni$studyid,
+   delta = meta_dat_uni$g, 
+   delta_var = meta_dat_uni$var_g,es_id = meta_dat_uni$esid, 
+   r= 0.5, 
+   smooth_vi = TRUE, 
+   control_list = list()
+ )
+ 
+ #----------------------------------------------------
+ # test estimate that will result in a non-convergence
+ 
+ 
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ set.seed(522719220)
+ 
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
+ 
+ mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
+                        omega_sq =0.0025,
+                        rho = .2, P = 0.40, 
+                        k_j = mean(dat_kjN$kj), 
+                        N = mean(dat_kjN$N), 
+                        f_c_val = "P5", 
+                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
+                        bal ="balanced_j" )
+ 
+ 
+ 
+ 
+ meta_dat <- generate_meta(
+   J = 60,
+   tau_sq = 0.0025,
+   omega_sq = 0.0025,
+   bal = "balanced_j",
+   mu_vector = mu_vector,
+   rho = .2,
+   P = 0.40,
+   sample_sizes = dat_kjN_samp$N,
+   k_j = dat_kjN_samp$kj,
+   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
+   f_c_val = "P5",
+   return_study_params = FALSE
+ )
+ 
+ 
+ test_output <- estimate_model( 
+   #formula= g ~ 0 + category, 
+   moderator_val = meta_dat$category,
+   cluster_id = meta_dat$studyid,
+   delta = meta_dat$g, 
+   delta_var = meta_dat$var_g,es_id = meta_dat$esid, 
+   r= 0.5, 
+   smooth_vi = TRUE, 
+   control_list = list()
+ )
+ 
+ 
+ 
+ 
+ 
+ 
  #----------------------------------------------------
  # test estimate if I want to get mu_Values from the generate_meta function. 
  ## this is only relevant to the the orginal generate_meta() function that generates

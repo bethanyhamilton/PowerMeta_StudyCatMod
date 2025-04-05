@@ -223,8 +223,8 @@ find_lambda <- function(d1, d2, x, area, interval, tol){
 
 # patterns of the beta_coefficients
 f_c_lookup <- list(
-  P1 = c(0, 1),
-  P2 = c(0, 1, 2),
+  P1 = c(0,1),
+  P2 = c(0,1,2),
   P3 = c(0, 0, 1),
   P4 = c(0, 1, 1),
   P5 = c(0, 1, 2, 3),
@@ -796,7 +796,6 @@ generate_meta <- function(J, tau_sq,
 
 
 estimate_model <- function(data = NULL,
-                          # return_mu = NULL,
                            moderator_val,
                            cluster_id,
                            delta, 
@@ -808,15 +807,6 @@ estimate_model <- function(data = NULL,
 ){
   
   require(dplyr)
-  
-  
-  # if(!is.null(return_mu)){
-  #  
-  #    dat <- data[[1]]
-  #    mu_vector <- data[[2]]
-  #    
-  #    
-  # }
     
   dat <- data.frame(
     study_id = cluster_id,
@@ -824,8 +814,6 @@ estimate_model <- function(data = NULL,
     g = delta,
     vi = delta_var,
     esid = es_id
-    
-    
     
   )
   
@@ -840,28 +828,87 @@ estimate_model <- function(data = NULL,
  
   C = length(unique(dat$moderator))
   
+
   
-  V_list <- 
-    vcalc(
-      vi = var_g_j,
-      cluster = study_id,
-      rho = r,
-      obs = esid,
-      sparse = TRUE,
-      data = dat 
-    )
+  # Instead of throwing out samples that do not converge and increasing the number
+  # of replications until I get 2,500 converged samples, 
+  # JEP suggested I do the following:
   
-  rma_fit <- 
-    purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-      g ~ 0 + moderator,
-      V = V_list, 
-      random = ~ 1 | study_id / esid,
-      data = dat,
-      test = "t",
-      sparse = TRUE,
-      verbose = FALSE,
-      control = control_list 
+  # CHE convergence issues: 
+  # 1) a meta-analytic dataset sample has no dependence, 
+  #    so between and within-study variances can't be estimated.
+  # 2) a variance is close to 0 and can't be estimated, so try different optimizer
+  
+  ## old fit
+  # rma_fit <- 
+  #   purrr::possibly(metafor::rma.mv, otherwise = NULL)(
+  #     g ~ 0 + moderator,
+  #     V = V_list, 
+  #     random = ~ 1 | study_id / esid,
+  #     data = dat,
+  #     test = "t",
+  #     sparse = TRUE,
+  #     verbose = FALSE,
+  #     control = control_list 
+  #   )
+  
+  
+  ## new fit
+  optimizers <- c("nlminb","nloptr","Rvmmin","BFGS")
+  rma_fit <- "Non-converged"
+  i <- 1L
+  
+  max_kj <-  dat |> 
+    group_by(study_id) |> 
+    tally() |> 
+    summarize(max_kj = max(n)) |> as.numeric()
+  
+  while (!inherits(rma_fit, "rma") & i <= 4L) {
+    rma_fit <- tryCatch( {
+      
+      if(max_kj != 1 ){
+        
+        V_list <- 
+          vcalc(
+            vi = var_g_j,
+            cluster = study_id,
+            rho = r,
+            obs = esid,
+            sparse = TRUE,
+            data = dat 
+          )
+        
+          rma.mv(
+          g ~ 0 + moderator,
+          V = V_list,
+          random = ~ 1 | study_id / esid,
+          data = dat,
+          test = "t",
+          sparse = TRUE,
+          control = list(optimizer=optimizers[i])
+        )
+      
+       } else{
+        
+         rma.uni(
+          yi = g, 
+          vi = var_g_j,
+          mods = ~ moderator - 1,
+          data = dat,
+          method = "REML",
+         #   sparse = TRUE,
+          control = list(optimizer=optimizers[i])
+        )
+        
+      }
+      
+      } ,
+      error = function(e) "Non-converged"
     )
+    i <- i + 1L
+  }
+  
+  
   
   tryCatch({ 
   coef_RVE <-  robust(
@@ -870,9 +917,8 @@ estimate_model <- function(data = NULL,
     clubSandwich = TRUE 
   )
   
-  wald_test_results <- Wald_test((rma_fit), constraints = constrain_equal(1:C), vcov =  "CR2")
-  
-  
+  V_trt <- vcovCR(rma_fit, cluster = dat$study_id, type = "CR2")
+  wald_test_results <- Wald_test((rma_fit), constraints =  constrain_equal(1:C), vcov = V_trt)
   
   res <- 
     tibble(
@@ -882,14 +928,14 @@ estimate_model <- function(data = NULL,
       df2 = wald_test_results$df_denom,
       p_val = wald_test_results$p_val, 
       model = "CHE",
-      var = "RVE"
+      var = "RVE",
+      optimizer = optimizers[i-1],
+      max_kj = max_kj
     )
-  
- 
- 
-  
 
-  }, error = function(w) { res<- 
+  }, error = function(w) { 
+  
+    res <- 
     tibble(
       est = NA_real_,
       est_var = NA_real_,
@@ -897,17 +943,13 @@ estimate_model <- function(data = NULL,
       df2 = NA_real_,
       p_val = NA_real_, 
       model = "CHE",
-      var = "RVE"
+      var = "RVE",
+      optimizer = optimizers[i-1],
+      max_kj = max_kj
     )
   
   })
   
-  # if(!is.null(return_mu)){
-  #   
-  #   res$mu_vector_list <- list(mu_vector)
-  #   
-  #   
-  # } 
   res
   
 }
@@ -1082,11 +1124,9 @@ run_sim <- function(iterations,
                          sample_sizes = sample_dat$N, 
                          k_j = sample_dat$kj,
                          mu_vector = mu_vector,
-                     
                          f_c_val = f_c_val,
                          sigma_j_sq = sigma_j_sq,
-                         return_study_params = return_study_params,
-                         seed = seed 
+                         return_study_params = return_study_params
     )
     
     
@@ -1098,7 +1138,6 @@ run_sim <- function(iterations,
                                es_id = dat$esid,
                                r= rho,
                                smooth_vi = TRUE, 
-                             #  return_mu = NULL,
                                control_list = list()
     )
     
@@ -1110,16 +1149,5 @@ run_sim <- function(iterations,
     
   }) |> dplyr::bind_rows()
   
-  #REMOVE LATER
-  #end_time = Sys.time()
-  
-  #results$time <-   end_time - start_time
-  
-  # if (summarize_results) {
-  #   performance <- sim_performance(results = results)
-  #   return(performance)
-  # } else {
-  #   return(results)
-  # }
 }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -J powstudcatmod_4 #Job name
-#SBATCH -o powstudcatmod_4.o%j  # Name of outputfile
-#SBATCH -e powstudcatmod_4.e%j  # Name of stderr error file
+#SBATCH -J powstudcatmod_4b #Job name
+#SBATCH -o powstudcatmod_4b.o%j  # Name of outputfile
+#SBATCH -e powstudcatmod_4b.e%j  # Name of stderr error file
 #SBATCH -p skx		  # Queue (partition) name
 #SBATCH -N 4           # Total number of nodes
 #SBATCH --ntasks-per-node 48              # Total # of mpi tasks
@@ -19,6 +19,6 @@ module load tacc-apptainer
 
 module load pylauncher/5.1.1 
 
-apptainer pull docker://bethanyhamilton/powstudcatmod:v0
+#apptainer pull docker://bethanyhamilton/powstudcatmod:v0
 
 python3 /work2/08147/bethanyh/stampede3/work_files/pmcmlauncher4.py
