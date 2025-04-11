@@ -57,7 +57,7 @@ multiple_categories <- function(data= NULL,
   
   study_level_data <-  dat |> 
         group_by(cluster, moderator) |>
-        summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') |> 
+    dplyr::summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') |> 
     mutate(tau_sq = tau_sq_val,
            omega_sq = omega_sq_val, 
            rho = rho_val)
@@ -76,7 +76,7 @@ multiple_categories <- function(data= NULL,
         omega_sq = omega_sq 
       )
     ) |> 
-    summarise(
+    dplyr::summarise(
       W = sum(w_j),
       E_Vr = 1/W,
       nu_Vr = (sum(w_j^2 / (W - w_j)^2) - (2 / W) * sum(w_j^3 / (W - w_j)^2) + (1 / W^2) * sum(w_j^2 / (W - w_j))^2)^(-1), 
@@ -386,7 +386,7 @@ power_approximation <- function(
   # Average sample sizes and number of effect sizes
   if ("balanced" %in% sample_size_method) {
     
-    if (is.null(N_mean) | is.null(k_mean)) stop("Must specify values for N_mean and k_mean.")
+    if (is.null(N_mean) | is.null(k_mean) ) stop("Must specify values for N_mean and k_mean.")
     
     N <- c(N, balanced = N_mean)
     kjs <- c(kjs, balanced = k_mean)
@@ -424,15 +424,25 @@ power_approximation <- function(
   C <-  ftoc[[f_c_val]]
   
 
-  # res_CHE_RVE <- map2_dfr(
-  #   .x = N, .y = kjs, .f = run_power, C=C,
-  #   J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho, bal = bal, P =P, f_c_val = f_c_val,
-  #   .id = "samp_method"
-  # )
+
+  # Get parameter mu value
+  
+  mu_vec <- mu_values(J = J, 
+                      tau_sq = tau_sq, 
+                      omega_sq = omega_sq, 
+                      rho = rho, P = P,
+                      f_c_val = f_c_val,
+                      bal =bal, 
+                      k_j = k_mean,  
+                      sigma_j_sq = sigma_j_sq_mean, 
+                      N = N_mean
+  )
+  
+  
   
   res_CHE_RVE <- pmap_df(
     list( kjs, N, sigma_j_sqs), .f = run_power, C=C,
-       J = J, tau_sq = tau_sq, omega_sq = omega_sq,  rho = rho, bal = bal, P =P, f_c_val = f_c_val,
+       J = J, tau_sq = tau_sq, omega_sq = omega_sq, mu_vector = mu_vec ,rho = rho, bal = bal, P =P, f_c_val = f_c_val,
        .id = "samp_method"
   )
   
@@ -441,7 +451,7 @@ power_approximation <- function(
     res_CHE_RVE <- res_CHE_RVE |> 
       mutate(samp_method = str_remove(samp_method, "[:digit:]+")) |> 
       group_by(samp_method) |> 
-      summarise(
+      dplyr::summarise(
         across(c(power, ncp, df_den), mean),
         .groups = "drop"
       )
@@ -456,8 +466,6 @@ power_approximation <- function(
 }
 
 
-# JEP: Do you actually need this function?
-# It seems like it does basically the same thing as power_CHE_RVE_study_cat()?
 run_power <- function(C, 
                       J, 
                       tau_sq, 
@@ -466,19 +474,14 @@ run_power <- function(C,
                       k_j, 
                       P, 
                       f_c_val,
+                      mu_vector,
                       bal,
                       N = NULL, 
                       sigma_j_sq = NULL
 ){
   
+  
 
-  mu_vec <- mu_values(J = J, tau_sq = tau_sq, 
-                      omega_sq = omega_sq,
-                      rho = rho, P = P, 
-                      k_j = k_j, N = N, 
-                      sigma_j_sq = sigma_j_sq, 
-                      f_c_val = f_c_val, 
-                      bal = bal)
   
   dat_app <-  dat_approx(C = C, J = J, tau_sq = tau_sq, 
                          omega_sq = omega_sq, rho = rho, 
@@ -492,11 +495,10 @@ run_power <- function(C,
                                     rho_val = dat_app$rho,
                                     omega_sq_val = dat_app$omega_sq,
                                     tau_sq_val = dat_app$tau_sq,
-                                    mu = mu_vec, 
+                                    mu = mu_vector, 
                                     alpha = .05)
   
-  
-  
+
   return(power)
   
 }
@@ -725,6 +727,9 @@ generate_meta <- function(J, tau_sq,
   require(purrr)
   if (!is.null(seed)) set.seed(seed)
   
+  
+  
+  
   # Study data --------------------------------------------------------------
   
   C <-  ftoc[[f_c_val]]
@@ -754,7 +759,7 @@ generate_meta <- function(J, tau_sq,
       studyid = mod_data$studyid
     ) |>
     group_by(studyid) |>
-    summarize(
+    dplyr::summarise(
       delta = list(delta),
       k_j = n(),
       .groups = "drop"
@@ -764,7 +769,6 @@ generate_meta <- function(J, tau_sq,
       Sigma = rep(rho, J),
       N = sample_sizes,
     ) 
-  
   
   
   
@@ -780,9 +784,7 @@ generate_meta <- function(J, tau_sq,
     left_join(mod_data_stud, by = "studyid") |>
     select(-delta, -k_j, -N, -Sigma) |>
     unnest(cols = c(smds, X))
-  
-  
-  
+
   
   return(meta_reg_dat)
 }
@@ -807,110 +809,114 @@ estimate_model <- function(data = NULL,
 ){
   
   require(dplyr)
+  
+  
+  tryCatch({
     
-  dat <- data.frame(
-    study_id = cluster_id,
-    moderator = moderator_val,
-    g = delta,
-    vi = delta_var,
-    esid = es_id
     
-  )
-  
-
-  if (smooth_vi) { 
-    dat <- 
-      dat |> 
-      group_by(study_id) |>
-      mutate(var_g_j = mean(vi, na.rm = TRUE)) |>
-      ungroup()
-  }
- 
-  C = length(unique(dat$moderator))
-  
-
-  
-  # Instead of throwing out samples that do not converge and increasing the number
-  # of replications until I get 2,500 converged samples, 
-  # JEP suggested I do the following:
-  
-  # CHE convergence issues: 
-  # 1) a meta-analytic dataset sample has no dependence, 
-  #    so between and within-study variances can't be estimated.
-  # 2) a variance is close to 0 and can't be estimated, so try different optimizer
-  
-  ## old fit
-  # rma_fit <- 
-  #   purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-  #     g ~ 0 + moderator,
-  #     V = V_list, 
-  #     random = ~ 1 | study_id / esid,
-  #     data = dat,
-  #     test = "t",
-  #     sparse = TRUE,
-  #     verbose = FALSE,
-  #     control = control_list 
-  #   )
-  
-  
-  ## new fit
-  optimizers <- c("nlminb","nloptr","Rvmmin","BFGS")
-  rma_fit <- "Non-converged"
-  i <- 1L
-  
-  max_kj <-  dat |> 
-    group_by(study_id) |> 
-    tally() |> 
-    summarize(max_kj = max(n)) |> as.numeric()
-  
-  while (!inherits(rma_fit, "rma") & i <= 4L) {
-    rma_fit <- tryCatch( {
+    dat <- data.frame(
+      study_id = cluster_id,
+      moderator = moderator_val,
+      g = delta,
+      vi = delta_var,
+      esid = es_id
       
-      if(max_kj != 1 ){
+    )
+    
+    
+    if (smooth_vi) { 
+      dat <- 
+        dat |> 
+        group_by(study_id) |>
+        mutate(var_g_j = mean(vi, na.rm = TRUE)) |>
+        ungroup()
+    }
+    
+    C = length(unique(dat$moderator))
+    
+    
+    
+    # Instead of throwing out samples that do not converge and increasing the number
+    # of replications until I get 2,500 converged samples, 
+    # JEP suggested I do the following:
+    
+    # CHE convergence issues: 
+    # 1) a meta-analytic dataset sample has no dependence, 
+    #    so between and within-study variances can't be estimated.
+    # 2) a variance is close to 0 and can't be estimated, so try different optimizer
+    
+    ## old fit
+    # rma_fit <- 
+    #   purrr::possibly(metafor::rma.mv, otherwise = NULL)(
+    #     g ~ 0 + moderator,
+    #     V = V_list, 
+    #     random = ~ 1 | study_id / esid,
+    #     data = dat,
+    #     test = "t",
+    #     sparse = TRUE,
+    #     verbose = FALSE,
+    #     control = control_list 
+    #   )
+    
+    
+    ## new fit
+    optimizers <- c("nlminb","nloptr","Rvmmin","BFGS")
+    rma_fit <- "Non-converged"
+    i <- 1L
+    
+    max_kj <-  dat |> 
+      group_by(study_id) |> 
+      tally() |> 
+      dplyr::summarise(max_kj = max(n)) |> as.numeric()
+    
+    while (!inherits(rma_fit, "rma") & i <= 4L) {
+      rma_fit <- tryCatch( {
         
-        V_list <- 
-          vcalc(
-            vi = var_g_j,
-            cluster = study_id,
-            rho = r,
-            obs = esid,
-            sparse = TRUE,
-            data = dat 
-          )
-        
+        if(max_kj != 1 ){
+          
+          V_list <- 
+            vcalc(
+              vi = var_g_j,
+              cluster = study_id,
+              rho = r,
+              obs = esid,
+              sparse = TRUE,
+              data = dat 
+            )
+          
           rma.mv(
-          g ~ 0 + moderator,
-          V = V_list,
-          random = ~ 1 | study_id / esid,
-          data = dat,
-          test = "t",
-          sparse = TRUE,
-          control = list(optimizer=optimizers[i])
-        )
-      
-       } else{
+            g ~ 0 + moderator,
+            V = V_list,
+            random = ~ 1 | study_id / esid,
+            data = dat,
+            test = "t",
+            sparse = TRUE,
+            control = list(optimizer=optimizers[i])
+          )
+          
+        } else{
+          
+          rma.uni(
+            yi = g, 
+            vi = var_g_j,
+            mods = ~ moderator - 1,
+            data = dat,
+            method = "REML",
+            #   sparse = TRUE,
+            control = list(optimizer=optimizers[i])
+          )
+          
+        }
         
-         rma.uni(
-          yi = g, 
-          vi = var_g_j,
-          mods = ~ moderator - 1,
-          data = dat,
-          method = "REML",
-         #   sparse = TRUE,
-          control = list(optimizer=optimizers[i])
-        )
-        
-      }
-      
       } ,
       error = function(e) "Non-converged"
-    )
-    i <- i + 1L
-  }
-  
-  
-  
-  tryCatch({ 
+      )
+      i <- i + 1L
+    }
+    
+    
+    
+    
   coef_RVE <-  robust(
     rma_fit, # estimation model above
     cluster = study_id, # define clusters
@@ -933,7 +939,7 @@ estimate_model <- function(data = NULL,
       max_kj = max_kj
     )
 
-  }, error = function(w) { 
+  }, error = function(e) { 
   
     res <- 
     tibble(
@@ -944,9 +950,7 @@ estimate_model <- function(data = NULL,
       p_val = NA_real_, 
       model = "CHE",
       var = "RVE",
-      optimizer = optimizers[i-1],
-      max_kj = max_kj
-    )
+      dat = list(data))
   
   })
   

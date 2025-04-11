@@ -69,7 +69,8 @@ run_power(C = 4,
           N = 30,
           bal = "balanced_j",
           P = .9, 
-          f_c_val = "P5")
+          f_c_val = "P5",
+          mu_vector = mu_vector)
 
 
 
@@ -610,9 +611,57 @@ df_den <- df_Z - q + 1
    control_list = list()
  )
  
+ ## kj = 1
  
  
  
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ set.seed(5227120)
+ 
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
+ 
+ dat_kjN_samp$kj <- 1
+ 
+ mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
+                        omega_sq =0.0025,
+                        rho = .2, P = 0.40, 
+                        k_j = mean(dat_kjN$kj), 
+                        N = mean(dat_kjN$N), 
+                        f_c_val = "P5", 
+                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
+                        bal ="balanced_j" )
+ 
+ 
+ 
+ 
+ meta_dat <- generate_meta(
+   J = 60,
+   tau_sq = 0.0025,
+   omega_sq = 0.0025,
+   bal = "balanced_j",
+   mu_vector = mu_vector,
+   rho = .2,
+   P = 0.40,
+   sample_sizes = dat_kjN_samp$N,
+   k_j = dat_kjN_samp$kj,
+   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
+   f_c_val = "P5",
+   return_study_params = FALSE
+ )
+ 
+ 
+ test_output <- estimate_model( 
+   #formula= g ~ 0 + category, 
+   moderator_val = meta_dat$category,
+   cluster_id = meta_dat$studyid,
+   delta = meta_dat$g, 
+   delta_var = meta_dat$var_g,es_id = meta_dat$esid, 
+   r= 0.5, 
+   smooth_vi = TRUE, 
+   control_list = list()
+ )
  
  
  #----------------------------------------------------
@@ -719,7 +768,7 @@ df_den <- df_Z - q + 1
  5*2*2*2*6*8*2 
  #3840
  
- #time in sec for run (with J=72) (one core/4.80 GHz) * number reps (2500) * conditions  node hours (48 cores per node)
+ #time in hours for run (with J=72) (one core/4.80 GHz) * number reps (2500) * conditions  node hours (48 cores per node)
  ((tm1[[3]]*2500*3840)/48)/60^2
  
  

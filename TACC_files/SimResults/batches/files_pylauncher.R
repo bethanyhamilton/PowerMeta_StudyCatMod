@@ -38,7 +38,7 @@ params2$batch <- NULL
 
 
 # Open the file for writing (no extension)
-FileName2 <- paste("TACC_files/batches/command_lines",batch_file,sep="")
+FileName2 <- paste("TACC_files/SimResults/batches/command_lines",batch_file,sep="")
 
 
 
