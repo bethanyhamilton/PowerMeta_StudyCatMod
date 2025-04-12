@@ -811,7 +811,7 @@ estimate_model <- function(data = NULL,
   require(dplyr)
   
   
-  tryCatch({
+  res <-  tryCatch({
     
     
     dat <- data.frame(
@@ -926,7 +926,7 @@ estimate_model <- function(data = NULL,
   V_trt <- vcovCR(rma_fit, cluster = dat$study_id, type = "CR2")
   wald_test_results <- Wald_test((rma_fit), constraints =  constrain_equal(1:C), vcov = V_trt)
   
-  res <- 
+  
     tibble(
       est = list(coef_RVE$beta),
       est_var = list(coef_RVE$se^2),
@@ -941,7 +941,6 @@ estimate_model <- function(data = NULL,
 
   }, error = function(e) { 
   
-    res <- 
     tibble(
       est = NA_real_,
       est_var = NA_real_,

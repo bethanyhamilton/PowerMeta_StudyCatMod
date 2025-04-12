@@ -569,39 +569,47 @@ df_den <- df_Z - q + 1
  source("SimFunctions/functionsdatagen.R")
  set.seed(522719220)
  
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
+ # dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ # dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
+ # 
+ # mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
+ #                        omega_sq =0.0025,
+ #                        rho = .2, P = 0.40, 
+ #                        k_j = mean(dat_kjN$kj), 
+ #                        N = mean(dat_kjN$N), 
+ #                        f_c_val = "P5", 
+ #                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
+ #                        bal ="balanced_j" )
+ # 
+ # 
+ # 
+ # 
+ # meta_dat <- generate_meta(
+ #   J = 60,
+ #   tau_sq = 0.0025,
+ #   omega_sq = 0.0025,
+ #   bal = "balanced_j",
+ #   mu_vector = mu_vector,
+ #   rho = .2,
+ #   P = 0.40,
+ #   sample_sizes = dat_kjN_samp$N,
+ #   k_j = dat_kjN_samp$kj,
+ #   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
+ #   f_c_val = "P5",
+ #   return_study_params = FALSE
+ # )
  
- mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
-                        omega_sq =0.0025,
-                        rho = .2, P = 0.40, 
-                        k_j = mean(dat_kjN$kj), 
-                        N = mean(dat_kjN$N), 
-                        f_c_val = "P5", 
-                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
-                        bal ="balanced_j" )
- 
- 
- 
- 
- meta_dat <- generate_meta(
-   J = 60,
-   tau_sq = 0.0025,
-   omega_sq = 0.0025,
-   bal = "balanced_j",
-   mu_vector = mu_vector,
-   rho = .2,
-   P = 0.40,
-   sample_sizes = dat_kjN_samp$N,
-   k_j = dat_kjN_samp$kj,
-   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
-   f_c_val = "P5",
-   return_study_params = FALSE
- )
+ meta_dat <- data.frame(
+   studyid = 1:10,
+   g  = rep(.2, 10),
+   var_g = rep(.02, 10),
+   category = c(rep("A", 5),rep("B", 5)),
+   esid = 1:10
+ ) 
  
  
  test_output <- estimate_model( 
-   #formula= g ~ 0 + category, 
+   data =  meta_dat,
    moderator_val = meta_dat$category,
    cluster_id = meta_dat$studyid,
    delta = meta_dat$g, 
@@ -611,58 +619,7 @@ df_den <- df_Z - q + 1
    control_list = list()
  )
  
- ## kj = 1
- 
- 
- 
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- set.seed(5227120)
- 
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
- 
- dat_kjN_samp$kj <- 1
- 
- mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
-                        omega_sq =0.0025,
-                        rho = .2, P = 0.40, 
-                        k_j = mean(dat_kjN$kj), 
-                        N = mean(dat_kjN$N), 
-                        f_c_val = "P5", 
-                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
-                        bal ="balanced_j" )
- 
- 
- 
- 
- meta_dat <- generate_meta(
-   J = 60,
-   tau_sq = 0.0025,
-   omega_sq = 0.0025,
-   bal = "balanced_j",
-   mu_vector = mu_vector,
-   rho = .2,
-   P = 0.40,
-   sample_sizes = dat_kjN_samp$N,
-   k_j = dat_kjN_samp$kj,
-   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
-   f_c_val = "P5",
-   return_study_params = FALSE
- )
- 
- 
- test_output <- estimate_model( 
-   #formula= g ~ 0 + category, 
-   moderator_val = meta_dat$category,
-   cluster_id = meta_dat$studyid,
-   delta = meta_dat$g, 
-   delta_var = meta_dat$var_g,es_id = meta_dat$esid, 
-   r= 0.5, 
-   smooth_vi = TRUE, 
-   control_list = list()
- )
- 
+
  
  #----------------------------------------------------
  # test estimate if I want to get mu_Values from the generate_meta function. 
