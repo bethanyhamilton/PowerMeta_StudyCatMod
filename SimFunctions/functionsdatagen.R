@@ -942,8 +942,8 @@ estimate_model <- function(data = NULL,
   }, error = function(e) { 
   
     tibble(
-      est = NA_real_,
-      est_var = NA_real_,
+      est = NULL,
+      est_var = NULL,
       df1 = NA_real_,
       df2 = NA_real_,
       p_val = NA_real_, 

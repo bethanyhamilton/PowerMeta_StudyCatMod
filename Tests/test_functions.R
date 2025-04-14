@@ -568,7 +568,7 @@ df_den <- df_Z - q + 1
    ungroup()
  
  
- test_output <- estimate_model( 
+ test_output2 <- estimate_model( 
    #formula= g ~ 0 + category, 
    moderator_val = meta_dat_uni$category,
    cluster_id = meta_dat_uni$studyid,

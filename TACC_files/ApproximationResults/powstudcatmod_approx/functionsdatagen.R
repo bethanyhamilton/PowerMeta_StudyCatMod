@@ -223,8 +223,8 @@ find_lambda <- function(d1, d2, x, area, interval, tol){
 
 # patterns of the beta_coefficients
 f_c_lookup <- list(
-  P1 = c(0,1),
-  P2 = c(0,1,2),
+  P1 = c(0, 1),
+  P2 = c(0, 1, 2),
   P3 = c(0, 0, 1),
   P4 = c(0, 1, 1),
   P5 = c(0, 1, 2, 3),
@@ -942,8 +942,8 @@ estimate_model <- function(data = NULL,
   }, error = function(e) { 
   
     tibble(
-      est = NA_real_,
-      est_var = NA_real_,
+      est = NULL,
+      est_var = NULL,
       df1 = NA_real_,
       df2 = NA_real_,
       p_val = NA_real_, 
