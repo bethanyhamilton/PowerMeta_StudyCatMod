@@ -108,6 +108,24 @@ test <- power_approximation(
   seed = NULL)
 test
 
+tm <- system.time(blah <- power_approximation(
+  J = 24, 
+  tau_sq = .40^2, 
+  omega_sq= .10^2, 
+  rho = 0.8, 
+  N_mean = mean(dat_kjN$N), 
+  k_mean = mean(dat_kjN$kj),
+  sigma_j_sq_mean = mean(dat_kjN$sigma_j_sq),
+  sigma_j_sq_dist = shape_rate2,
+  N_dist = shape_rate, 
+  pilot_data = dat_kjN_samp, 
+  iterations = 100,
+  sample_size_method = c("balanced","stylized","empirical"),
+  P = .5,
+  f_c_val = "P5",
+  bal = "balanced_j",
+  average_power = TRUE,
+  seed = NULL))
 
 
 #------------------------------------------------------------------------------------
