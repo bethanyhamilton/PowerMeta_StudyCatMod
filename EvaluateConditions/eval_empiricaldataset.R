@@ -4,7 +4,7 @@
 
 rm(list=ls())
 library(haven)
-
+library(tidyverse)
 
 Diet_dat <-
   read_dta("EvaluateConditions/RER_cluster.dta")
@@ -282,7 +282,7 @@ math_dat |>
 ggplot(math_dat, aes(kj)) + 
   geom_histogram()
 
-ggplot(math_dat, aes(se_avg)) + 
+ggplot(math_dat, aes(se_avg^2)) + 
   geom_histogram()
 
 ggplot(math_dat, aes(kj, N_ess)) + 
@@ -302,7 +302,7 @@ ggplot(math_dat, aes(kj, se_avg)) +
 
 dat_kjN_math <- 
   math_dat |>  
-  select(kj, N = N_ess, se_avg) |> 
+  dplyr::select(kj, N = N_ess, se_avg) |> 
   mutate(sigma_j_sq = se_avg^2) |> 
   # Excluding effective sample sizes larger than 500 
   # and studies with more than 20 outcomes

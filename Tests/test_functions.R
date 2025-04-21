@@ -43,23 +43,6 @@ mu_vector <- mu_values(J = 12, tau_sq = .05^2,
 mu_vector
 
 
-# run_power(C = 4,
-#           J = 12,
-#           tau_sq = .05^2,
-#           omega_sq = .05^2,
-#           rho = .5,
-#           k_j = 3,
-#           N = 30,
-#           bal = "balanced_j",
-#           mu= mu_vector)
-
-## need to construct the mu to find power, so this function now gets the Power and 
-# f_c_val (pattern) of mu values to make the mu vector. Then it uses the constructed
-# mu vector to find power. It matches up. I needed to do this because later I have a vector
-# of k_j and N values from different sampling methods and I needed the mu vector to change with those
-# values. 
-
-
 run_power(C = 4,
           J = 12,
           tau_sq = .05^2,
@@ -133,51 +116,73 @@ tm <- system.time(blah <- power_approximation(
 ### ------------------------------------------- ###
 ###         Test generate Meta and Df           ###
 ### ------------------------------------------- ###
-rm(list=ls())
+rm(list = ls())
 source("SimFunctions/functionsdatagen.R")
 
 
-sample_empirical_dat <- tibble(N = rep(200, 12 ), k_j  = c(3,4,3,5,3,3,3,3,3,3,3,3) )
-mu_vector <- mu_values(J = 12, tau_sq = .05^2, 
-                       omega_sq = .05^2,
-                       rho = .5, P = .9, 
-                       k_j = sample_empirical_dat$k_j, N = sample_empirical_dat$N, 
-                       f_c_val = "P5", 
-                       #sigma_j_sq = NA,
-                       bal ="balanced_j" )
+sample_empirical_dat <- tibble(N = rep(200, 12),
+                               k_j  = c(3, 4, 3, 5, 3, 3, 3, 3, 3, 3, 3, 3))
+mu_vector <- mu_values(
+  J = 12,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = sample_empirical_dat$k_j,
+  N = sample_empirical_dat$N,
+  f_c_val = "P5",
+  #sigma_j_sq = NA,
+  bal = "balanced_j"
+)
 
-meta_dat <- generate_meta(J = 12, tau_sq = .05^2, 
-                          omega_sq = .05^2, 
-                          bal = "balanced_j", 
-                          mu_vector = mu_vector,
-                          #C = 4,
-                                      rho = .5, P = .9, 
-                          sample_sizes = sample_empirical_dat$N, 
-                                      k_j = sample_empirical_dat$k_j,
-                                      sigma_j_sq = NULL,
-                                      f_c_val = "P5",
-                                      return_study_params = FALSE,
-                                      seed = NULL)
+meta_dat <- generate_meta(
+  J = 12,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "balanced_j",
+  mu_vector = mu_vector,
+  #C = 4,
+  rho = .5,
+  sample_sizes = sample_empirical_dat$N,
+  k_j = sample_empirical_dat$k_j,
+  
+  f_c_val = "P5",
+  return_study_params = FALSE,
+  seed = NULL
+)
 
 
 
 
 ### clubSandwich df
-V <- with(meta_dat, 
-          clubSandwich::impute_covariance_matrix(vi = var_g, cluster = studyid, r = .5, smooth_vi = TRUE))
+V <- with(
+  meta_dat,
+  clubSandwich::impute_covariance_matrix(
+    vi = var_g,
+    cluster = studyid,
+    r = .5,
+    smooth_vi = TRUE
+  )
+)
 
-fit <- rma.mv(g ~ -1 + category, 
-                      V = V, random = ~ 1 | studyid/esid, sparse = TRUE,
-                      data = meta_dat, test = "t", method = "REML")
+fit <- rma.mv(
+  g ~ -1 + category,
+  V = V,
+  random = ~ 1 | studyid / esid,
+  sparse = TRUE,
+  data = meta_dat,
+  test = "t",
+  method = "REML"
+)
+
 
 
 V_sep <- vcovCR(fit, cluster = meta_dat$studyid, type = "CR2")
 
 clubsandwichdf <- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_sep)
 #clubsandwichdf$df_denom
- 
 
-### my function df 
+### my function df
 multiplecat  <- multiple_categories(
   data = meta_dat,
   moderator_val = category,
@@ -188,8 +193,12 @@ multiplecat  <- multiple_categories(
   tau_sq_val = fit$sigma2[1]
 )
 
-df_Z <- df_val(E_Vr = multiplecat$E_Vr, nu_Vr = multiplecat$nu_Vr, W = multiplecat$W)[[2]]
-q <- df_val(E_Vr = multiplecat$E_Vr, nu_Vr = multiplecat$nu_Vr, W = multiplecat$W)[[1]]
+df_Z <- df_val(E_Vr = multiplecat$E_Vr,
+               nu_Vr = multiplecat$nu_Vr,
+               W = multiplecat$W)[[2]]
+q <- df_val(E_Vr = multiplecat$E_Vr,
+            nu_Vr = multiplecat$nu_Vr,
+            W = multiplecat$W)[[1]]
 
 C_sep <- constrain_equal(1:4, coefs = coef(fit))
 mu_hat <- coef(fit)
@@ -202,276 +211,342 @@ delta <- (df_Z - q + 1) / (df_Z)
 Fstat <- delta * Q / q
 df_num <- q
 df_den <- df_Z - q + 1
- 
- 
- ## test
- all.equal(df_num, clubsandwichdf$df_num)
- all.equal(df_den, clubsandwichdf$df_denom)
- all.equal(delta, clubsandwichdf$delta)
- all.equal(Fstat, clubsandwichdf$Fstat)
- 
- 
+
+
+## test
+all.equal(df_num, clubsandwichdf$df_num)
+all.equal(df_den, clubsandwichdf$df_denom)
+all.equal(delta, clubsandwichdf$delta)
+all.equal(Fstat, clubsandwichdf$Fstat)
+
  #------------------------------------------------------------------------------------
  
  ### ------------------------------------------- ###
  ###         Demonstrate generate Meta           ###
  ### ------------------------------------------- ###
  
- # multiple of 12 for number of studies -- unbalanced kj
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- set.seed(6535566)
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
- design_matrix_ex <- design_matrix(C = 4, J = 24, bal = "balanced_j",  k_j = dat_kjN_samp$kj )
- design_matrix_ex
- 
- mu_vector <- mu_values(J = 24, tau_sq = .05^2, 
-                        omega_sq = .05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P5", 
-                        #sigma_j_sq = NA,
-                        bal ="balanced_j" )
- 
- meta_dat2 <- generate_meta(J = 24, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
-                            bal = "balanced_j", 
-                            mu_vector = mu_vector,
-                            #C = 4,
-                            rho = .5, P = .9, 
-                            sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = NULL,
-                            f_c_val = "P5",
-                            return_study_params = FALSE,
-                            seed = NULL)
- 
- 
- head(meta_dat2)
- meta_dat2 |> group_by(category) |>  tally()
- meta_dat2|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
- 
+# multiple of 12 for number of studies -- unbalanced kj
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+set.seed(6535566)
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+design_matrix_ex <- design_matrix(C = 4,
+                                  J = 24,
+                                  bal = "balanced_j",
+                                  k_j = dat_kjN_samp$kj)
+design_matrix_ex
+
+mu_vector <- mu_values(
+  J = 24,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P5",
+  bal = "balanced_j"
+)
+
+meta_dat2 <- generate_meta(
+  J = 24,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "balanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P5",
+  return_study_params = FALSE,
+  seed = NULL
+)
+
+
+head(meta_dat2)
+meta_dat2 |> 
+  group_by(category) |>  
+  tally()
+meta_dat2 |> 
+  select(studyid, category) |>  
+  distinct()  |> 
+  group_by(category)  |>  
+  tally()
+
  #------------------------------------------
  # unbalanced J -- four category , 24 studies
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- set.seed(65436)
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
- 
- mu_vector <- mu_values(J = 24, tau_sq = .05^2, 
-                        omega_sq = .05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, 
-                        N = dat_kjN_samp$N, 
-                        f_c_val = "P5", 
-                        #sigma_j_sq = NA,
-                        bal ="unbalanced_j" )
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+set.seed(65436)
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
 
-  meta_dat3 <- generate_meta(J = 24, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
-                            bal = "unbalanced_j", 
-                            mu_vector = mu_vector,
-                            rho = .5, P = .9, 
-                            sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = NULL,
-                            f_c_val = "P5",
-                            return_study_params = FALSE,
-                            seed = NULL)
- meta_dat3 |> group_by(category) |>  tally()
- 
- meta_dat3|> select(studyid, category) |>  distinct()  |> group_by(category)  |>  tally()
- 
- #------------------------------------------
- # unbalanced J -- three category
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
- mu_vector <- mu_values(J = 24, tau_sq = 0.40^2, 
-                        omega_sq = 0.20^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P4", 
-                        #sigma_j_sq = NA,
-                        bal ="unbalanced_j" )
- 
- meta_dat3 <- generate_meta(J = 24, tau_sq = 0.40^2, 
-                            omega_sq = 0.20^2, 
-                            bal = "unbalanced_j", 
-                            mu_vector = mu_vector,
-                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = NULL,
-                            f_c_val = "P4",
-                            return_study_params = FALSE,
-                            seed = NULL)
- meta_dat3  |>  group_by(category)  |>  tally()
- 
- meta_dat3  |>  select(studyid, category) |>  distinct()  |> group_by(category) |> tally()
- 
- # just checking if I recapture the tau^2 and omega^2 below
- meta_dat3 <- meta_dat3 |> 
-   group_by(studyid) |>
-   mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
-   ungroup()
- 
- 
- V_list2 <- 
-   vcalc(
-     vi = meta_dat3$var_g_j,
-     cluster = meta_dat3$studyid,
-     rho = 0.5,
-     obs = meta_dat3$esid
-     
-     
-   )
- 
- res_comp <- rma.mv(g ~ 0 + category,
-                    V = V_list2, 
-                    random = ~ 1 | studyid / esid,
-                    data = meta_dat3,
-                    test = "t",
-                    sparse = TRUE,
-                    verbose = FALSE
- )
- res_comp
- 
- #------------------------------------------
- 
- # unbalanced J -- two category
- set.seed(21220251)
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
- 
+mu_vector <- mu_values(
+  J = 24,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P5",
+  bal = "unbalanced_j"
+)
 
- design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp$kj )
- design_matrix_ex2
- 
- mu_vector <- mu_values(J = 12, tau_sq =05^2, 
-                        omega_sq =.05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P1", 
-                        #sigma_j_sq = NA,
-                        bal ="unbalanced_j" )
- 
- meta_dat4 <- generate_meta(J = 12, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
-                            bal = "unbalanced_j",
-                            mu_vector = mu_vector,
-                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = NULL,
-                            f_c_val = "P1",
-                            return_study_params = FALSE,
-                            seed = NULL)
- 
- head(meta_dat4)
- meta_dat4 |> group_by(category)  |>  tally()
- 
- meta_dat4  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
- 
- 
- #------------------------------------------
- # sigma_j_q instead of N
- set.seed(21220252)
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+meta_dat3 <- generate_meta(
+  J = 24,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "unbalanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P5",
+  return_study_params = FALSE,
+  seed = NULL
+)
+meta_dat3 |> 
+  group_by(category) |>  
+  tally()
 
- design_matrix_ex2 <- design_matrix(C = 2, J = 12, bal = "unbalanced_j",  k_j = dat_kjN_samp$kj )
- design_matrix_ex2
- 
- mu_vector <- mu_values(J = 12, tau_sq =05^2, 
-                        omega_sq =.05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P1", 
-                        sigma_j_sq = dat_kjN_samp$se_avg^2,
-                        bal ="unbalanced_j" )
- 
- meta_dat5 <- generate_meta(J = 12, tau_sq = .05^2, 
-                            omega_sq = .05^2, 
-                            bal = "unbalanced_j", 
-                            mu_vector = mu_vector,
-                            rho = .5, P = .9, sample_sizes = dat_kjN_samp$N, 
-                            k_j = dat_kjN_samp$kj,
-                            sigma_j_sq = dat_kjN_samp$se_avg^2,
-                            f_c_val = "P1",
-                            return_study_params = FALSE,
-                            seed = NULL)
- 
- head(meta_dat5)
- meta_dat5 |> group_by(category)  |>  tally()
- 
- meta_dat5  |>  select(studyid, category)|> distinct()  |> group_by(category)|> tally()
- #------------------------------------------
+meta_dat3 |> 
+  select(studyid, category) |>  
+  distinct()  |> 
+  group_by(category)  |>  
+  tally()
 
+#------------------------------------------
+# unbalanced J -- three category
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+mu_vector <- mu_values(
+  J = 24,
+  tau_sq = 0.40^2,
+  omega_sq = 0.20^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P4",
+  #sigma_j_sq = NA,
+  bal = "unbalanced_j"
+)
+
+meta_dat3 <- generate_meta(
+  J = 24,
+  tau_sq = 0.40^2,
+  omega_sq = 0.20^2,
+  bal = "unbalanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P4",
+  return_study_params = FALSE,
+  seed = NULL
+)
+meta_dat3  |>  
+  group_by(category)  |>  
+  tally()
+
+meta_dat3  |>  
+  select(studyid, category) |> 
+  distinct()  |> 
+  group_by(category) |>
+  tally()
+
+# just checking if I recapture the tau^2 and omega^2 below
+meta_dat3 <- meta_dat3 |>
+  group_by(studyid) |>
+  mutate(var_g_j = mean(var_g, na.rm = TRUE)) |>
+  ungroup()
+
+
+V_list2 <-
+  vcalc(
+    vi = meta_dat3$var_g_j,
+    cluster = meta_dat3$studyid,
+    rho = 0.5,
+    obs = meta_dat3$esid
+    
+    
+  )
+
+res_comp <- rma.mv(
+  g ~ 0 + category,
+  V = V_list2,
+  random = ~ 1 | studyid / esid,
+  data = meta_dat3,
+  test = "t",
+  sparse = TRUE,
+  verbose = FALSE
+)
+res_comp
+#------------------------------------------
+
+# unbalanced J -- two category
+set.seed(21220251)
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+
+
+design_matrix_ex2 <- design_matrix(C = 2,
+                                   J = 12,
+                                   bal = "unbalanced_j",
+                                   k_j = dat_kjN_samp$kj)
+design_matrix_ex2
+
+mu_vector <- mu_values(
+  J = 12,
+  tau_sq = 05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P1",
+  #sigma_j_sq = NA,
+  bal = "unbalanced_j"
+)
+
+meta_dat4 <- generate_meta(
+  J = 12,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "unbalanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P1",
+  return_study_params = FALSE,
+  seed = NULL
+)
+
+head(meta_dat4)
+meta_dat4 |> 
+  group_by(category)  |>  
+  tally()
+
+meta_dat4  |>  
+  select(studyid, category) |> 
+  distinct()  |> 
+  group_by(category) |> 
+  tally()
+#------------------------------------------
+# sigma_j_q instead of N
+set.seed(21220252)
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+
+design_matrix_ex2 <- design_matrix(C = 2,
+                                   J = 12,
+                                   bal = "unbalanced_j",
+                                   k_j = dat_kjN_samp$kj)
+design_matrix_ex2
+
+mu_vector <- mu_values(
+  J = 12,
+  tau_sq = 05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P1",
+  sigma_j_sq = dat_kjN_samp$se_avg^2,
+  bal = "unbalanced_j"
+)
+
+meta_dat5 <- generate_meta(
+  J = 12,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "unbalanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P1",
+  return_study_params = FALSE,
+  seed = NULL
+)
+
+head(meta_dat5)
+meta_dat5 |> 
+  group_by(category) |> 
+  tally()
+
+meta_dat5 |>  
+  select(studyid, category) |> 
+  distinct()  |> 
+  group_by(category) |> 
+  tally()
 
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
  ###         Test  Estimate                      ###
  ### ------------------------------------------- ### 
- rm(list=ls())
- source("SimFunctions/functionsdatagen.R")
- 
+rm(list = ls())
+source("SimFunctions/functionsdatagen.R")
 
- set.seed(1232024)
- 
- dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
- 
- mu_vector <- mu_values(J = 12, tau_sq =05^2, 
-                        omega_sq =.05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P5", 
-                        sigma_j_sq = dat_kjN_samp$se_avg^2,
-                        bal ="balanced_j" )
- 
 
- 
- 
- meta_dat <- generate_meta(
-   J = 12,
-   tau_sq = .05^2,
-   omega_sq = .05^2,
-   bal = "balanced_j",
-   mu_vector = mu_vector,
-   rho = .5,
-   P = .9,
-   sample_sizes = dat_kjN_samp$N,
-   k_j = dat_kjN_samp$kj,
-   f_c_val = "P5",
-   return_study_params = FALSE,
-   seed = NULL
- )
+set.seed(1232024)
 
- 
- test_output <- estimate_model( 
-   #formula= g ~ 0 + category, 
-                               moderator_val = meta_dat$category,
-                               cluster_id = meta_dat$studyid,
-                               delta = meta_dat$g, 
-                               delta_var = meta_dat$var_g,es_id = meta_dat$esid, 
-                               r= 0.5, 
-                               smooth_vi = TRUE, 
-                               control_list = list()
- )
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
 
- 
- 
+mu_vector <- mu_values(
+  J = 12,
+  tau_sq = 05^2,
+  omega_sq = .05^2,
+  rho = .5,
+  P = .9,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
+  f_c_val = "P5",
+  sigma_j_sq = dat_kjN_samp$se_avg^2,
+  bal = "balanced_j"
+)
 
- 
- 
- 
-# meta_dat$studyid <- as.factor(meta_dat$studyid)
+
+
+
+meta_dat <- generate_meta(
+  J = 12,
+  tau_sq = .05^2,
+  omega_sq = .05^2,
+  bal = "balanced_j",
+  mu_vector = mu_vector,
+  rho = .5,
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
+  f_c_val = "P5",
+  return_study_params = FALSE,
+  seed = NULL
+)
+
+
+test_output <- estimate_model(
+  #formula= g ~ 0 + category,
+  moderator_val = meta_dat$category,
+  cluster_id = meta_dat$studyid,
+  delta = meta_dat$g,
+  delta_var = meta_dat$var_g,
+  es_id = meta_dat$esid,
+  r = 0.5,
+  smooth_vi = TRUE,
+  control_list = list()
+)
+
  
  #smooth variances
  meta_dat <- meta_dat |> 
@@ -499,7 +574,7 @@ df_den <- df_Z - q + 1
    verbose = FALSE
  )
  
- coef_RVE2 <-  robust(
+ coef_RVE2 <-  metafor::robust(
    res_comp, # estimation model above
    cluster = studyid, # define clusters
    clubSandwich = TRUE # use CR2 adjustment
@@ -523,9 +598,7 @@ df_den <- df_Z - q + 1
  
  #----------------------------------------------------
  # test if it uses rma.uni() when only kj = 1
- 
- 
- rm(list=ls())
+ rm(list = ls())
  source("SimFunctions/functionsdatagen.R")
  
  
@@ -534,16 +607,18 @@ df_den <- df_Z - q + 1
  dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
  dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
  
- mu_vector <- mu_values(J = 12, tau_sq =05^2, 
-                        omega_sq =.05^2,
-                        rho = .5, P = .9, 
-                        k_j = dat_kjN_samp$kj, N = dat_kjN_samp$N, 
-                        f_c_val = "P5", 
-                        sigma_j_sq = dat_kjN_samp$se_avg^2,
-                        bal ="balanced_j" )
- 
- 
- 
+ mu_vector <- mu_values(
+   J = 12,
+   tau_sq = 05^2,
+   omega_sq = .05^2,
+   rho = .5,
+   P = .9,
+   k_j = dat_kjN_samp$kj,
+   N = dat_kjN_samp$N,
+   f_c_val = "P5",
+   sigma_j_sq = dat_kjN_samp$se_avg^2,
+   bal = "balanced_j"
+ )
  
  meta_dat <- generate_meta(
    J = 12,
@@ -552,7 +627,6 @@ df_den <- df_Z - q + 1
    bal = "balanced_j",
    mu_vector = mu_vector,
    rho = .5,
-   P = .9,
    sample_sizes = dat_kjN_samp$N,
    k_j = dat_kjN_samp$kj,
    f_c_val = "P5",
@@ -560,22 +634,20 @@ df_den <- df_Z - q + 1
    seed = NULL
  )
  
- 
- 
- meta_dat_uni <- meta_dat |> 
-   group_by(studyid) |> 
-   slice(1:1) |> 
+ meta_dat_uni <- meta_dat |>
+   group_by(studyid) |>
+   slice(1:1) |>
    ungroup()
  
  
- test_output2 <- estimate_model( 
-   #formula= g ~ 0 + category, 
+ test_output2 <- estimate_model(
    moderator_val = meta_dat_uni$category,
    cluster_id = meta_dat_uni$studyid,
-   delta = meta_dat_uni$g, 
-   delta_var = meta_dat_uni$var_g,es_id = meta_dat_uni$esid, 
-   r= 0.5, 
-   smooth_vi = TRUE, 
+   delta = meta_dat_uni$g,
+   delta_var = meta_dat_uni$var_g,
+   es_id = meta_dat_uni$esid,
+   r = 0.5,
+   smooth_vi = TRUE,
    control_list = list()
  )
  
@@ -587,35 +659,6 @@ df_den <- df_Z - q + 1
  source("SimFunctions/functionsdatagen.R")
  set.seed(522719220)
  
- # dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- # dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 60, with_replacement = TRUE)
- # 
- # mu_vector <- mu_values(J = 60, tau_sq =0.0025, 
- #                        omega_sq =0.0025,
- #                        rho = .2, P = 0.40, 
- #                        k_j = mean(dat_kjN$kj), 
- #                        N = mean(dat_kjN$N), 
- #                        f_c_val = "P5", 
- #                        sigma_j_sq = mean(dat_kjN$sigma_j_sq),
- #                        bal ="balanced_j" )
- # 
- # 
- # 
- # 
- # meta_dat <- generate_meta(
- #   J = 60,
- #   tau_sq = 0.0025,
- #   omega_sq = 0.0025,
- #   bal = "balanced_j",
- #   mu_vector = mu_vector,
- #   rho = .2,
- #   P = 0.40,
- #   sample_sizes = dat_kjN_samp$N,
- #   k_j = dat_kjN_samp$kj,
- #   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
- #   f_c_val = "P5",
- #   return_study_params = FALSE
- # )
  
  meta_dat <- data.frame(
    studyid = 1:10,
@@ -638,41 +681,8 @@ df_den <- df_Z - q + 1
  )
  
 
- 
- #----------------------------------------------------
- # test estimate if I want to get mu_Values from the generate_meta function. 
- ## this is only relevant to the the orginal generate_meta() function that generates
- ## mu values based on simulation parameters (conditional)
- 
- # meta_dat_mu_val <- generate_meta(J = 12, 
- #                                  tau_sq = .05^2, 
- #                                  omega_sq = .05^2,
- #                                  bal = "balanced_j", 
- #                                  #C = 4,
- #                                  rho = .5, P = .9, 
- #                                  sample_sizes = test_dat$N, 
- #                                  k_j = test_dat$k_j,
- #                                  f_c_val = "P5", 
- #                                  return_study_params = FALSE, 
- #                                  return_mu = TRUE,
- #                                  seed = NULL)
- # 
- # test_output_mu_val <- estimate_model( 
- #   #formula= g ~ 0 + category, 
- #   moderator_val = meta_dat_mu_val[[1]]$category,
- #   cluster_id = meta_dat_mu_val[[1]]$studyid,
- #   delta = meta_dat_mu_val[[1]]$g, 
- #   delta_var = meta_dat_mu_val[[1]]$var_g,
- #   es_id = meta_dat_mu_val[[1]]$esid, 
- #   r= 0.5, 
- #   smooth_vi = TRUE, 
- #   return_mu = TRUE,
- #   data = meta_dat_mu_val,
- #   
- #   control_list = list()
- # )
- # test_output_mu_val
- # 
+ all.equal(test_output$dat[[1]], meta_dat)
+
  
  #------------------------------------------------------------------------------------ 
  ### ------------------------------------------- ###
@@ -681,35 +691,9 @@ df_den <- df_Z - q + 1
  rm(list=ls())
  source("SimFunctions/functionsdatagen.R")
 
- 
- ## need to test with different empirical data set that has SE
- ## also should capture the mu_values from the data generation. 
+
 
  dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
- 
- # test <- run_sim(iterations = 1, 
- #                 J = 24, tau_sq = .05^2, 
- #                 omega_sq = .05^2, 
- #                 bal = "balanced_j", 
- #                 rho = .5, P = .9, 
- #                 f_c_val = "P5",
- #                 sigma_j_sq_inc = FALSE,
- #                 pilot_data = dat_kjN, 
- #                 return_study_params = FALSE,
- #                 seed = NULL,
- #                 summarize_results = FALSE)
- # 
- # tm1 <- system.time(test <- run_sim(iterations = 1, 
- #                                    J = 72, tau_sq = .05^2, 
- #                                    omega_sq = .05^2, 
- #                                    bal = "balanced_j", 
- #                                    rho = .5, P = .9, 
- #                                    f_c_val = "P5",
- #                                    sigma_j_sq_inc = FALSE,
- #                                    pilot_data = dat_kjN, 
- #                                    return_study_params = FALSE,
- #                                    seed = NULL,
- #                                    summarize_results = FALSE))
  
  
  tm1 <- system.time(test <- run_sim(iterations = 1, 

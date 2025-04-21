@@ -34,14 +34,17 @@ process_sim_files <- function(files, summary = TRUE, slice = NULL){
     
     if(!is.null(slice)) {
       summary_converged <-  sim_results_raw |> 
-        filter(!is.na(res.df1)) |>  
+        filter(!is.na(res.df1)) |> 
+        mutate(n_iterations_conv = n()) |> 
         slice(1:slice) |> 
+        group_by(J, tau_sq, omega_sq, rho, P, f_c_val, bal) |> 
         dplyr::summarise(
-          n_iterations = n(),
+          n_iterations_retained = n(),
+          conv_rate =  mean(n_iterations_conv/2500),
           p_val_avg = mean(res.p_val),
           df2_mean = mean(res.df2),
           rej_rate_05 = mean(res.p_val < 0.05, na.rm = TRUE),
-          MCSE_rej_rate_05 = sqrt(rej_rate_05*(1 - rej_rate_05)/n_iterations),
+          MCSE_rej_rate_05 = sqrt(rej_rate_05*(1 - rej_rate_05)/n_iterations_retained),
           mu_est_mean = list(reduce(res.est, `+`) / n()),
           mu_est_var = list(map(transpose(res.est), ~ var(unlist(.)))),
           mu_params = list(reduce(res.mu_vector_list, `+`) / n()),
@@ -52,15 +55,17 @@ process_sim_files <- function(files, summary = TRUE, slice = NULL){
       summary_converged <-  sim_results_raw |> 
         filter(!is.na(res.df1)) |>  
         dplyr::summarise(
-          n_iterations = n(),
+          n_iterations_conv = n(),
+          conv_rate = mean(n_iterations_conv/2500),
           p_val_avg = mean(res.p_val),
           df2_mean = mean(res.df2),
           rej_rate_05 = mean(res.p_val < 0.05, na.rm = TRUE),
-          MCSE_rej_rate_05 = sqrt(rej_rate_05*(1 - rej_rate_05)/n_iterations),
+          MCSE_rej_rate_05 = sqrt(rej_rate_05*(1 - rej_rate_05)/n_iterations_orig),
           mu_est_mean = list(reduce(res.est, `+`) / n()),
           mu_est_var = list(map(transpose(res.est), ~ var(unlist(.)))),
           mu_params = list(reduce(res.mu_vector_list, `+`) / n()),
           mu_est_bias = map2(mu_est_mean, mu_params, ~ .x - .y), 
+          
           .groups = "drop"
         ) 
     }

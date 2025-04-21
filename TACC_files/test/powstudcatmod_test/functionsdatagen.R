@@ -145,10 +145,6 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   ncp <-  ncp(weights = multiple_cat$W, mu_p = mu)
   
   
-  ##########################################
-  
-  
-  
   df_num <- df_val(E_Vr = multiple_cat$E_Vr, nu_Vr = multiple_cat$nu_Vr, W = multiple_cat$W)[[1]]
     
     
@@ -166,9 +162,6 @@ power_CHE_RVE_study_cat <- function(data = NULL,
   
   
 }
-
-
-
 
 
 # plug into uniroot to get lambda or the non-centrality parameter
@@ -272,7 +265,6 @@ mod <- function(C, J, bal, k_j ){
   
   
   #needs to be K x K
-  
   covariates <- tibble(category = c(rep(category_study$cat,  k_j)),
          studyid = as.character(c(rep(c(1:J),  k_j))),
          esid = 1:N)
@@ -309,14 +301,6 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
       cat <-   rep(LETTERS[1:C],  J_vec)
     }
     
-    # #less unbalanced
-    # if (C == 3){
-    #   
-    #   J_vec <- J * c(1/6, 5/12, 5/12)
-    #   
-    #   
-    # }
-    
     if (C == 3){
       J_vec <- J * c(1/4, 1/4, 1/2)
       cat <-   rep(LETTERS[1:C],  J_vec)
@@ -332,7 +316,7 @@ dat_approx <- function(C, J, tau_sq, omega_sq, rho, k_j, N= NULL, sigma_j_sq = N
 
 dat_approx <- tibble(studyid = c(1:J),
                        k_j= k_j,
-                       sigma_j_sq = sigma_j_sq, ##### CHANGE THIS LATER
+                       sigma_j_sq = sigma_j_sq,
                        omega_sq = rep(omega_sq, J),
                        rho = rep(rho, J),
                        tau_sq = rep(tau_sq, J),
@@ -368,14 +352,11 @@ power_approximation <- function(
                                 
 ){
   
-  
-  
-  
   # -----------------------------------------------------
   ## sampling methods code below pulled from https://osf.io/gaz9t/  and 
   ## incorporated into this study
   
-  ### add in sample sigma_j_sq*************************
+  ### added in sample sigma_j_sq
   # -------------------------------------------------------  
   
   if (!is.null(seed)) set.seed(seed)
@@ -583,7 +564,7 @@ mu_values <- function(
 }
 
 #-----------------------------------------------------------------------------
-### functions below are pulled and modified from https://osf.io/gaz9t/ (the study
+### n_ES_empirical, generate_smd functions below are pulled and modified from https://osf.io/gaz9t/ (the study
 ### I'm extending to be consistent in workflow. 
 ### probably try to make variable names consistent at some point...
 #-----------------------------------------------------------------------------
@@ -633,93 +614,15 @@ generate_smd <- function(delta, k_j, N, Sigma) {
 # }
 #-----------------------------------------------------------------------------  
 
-# generate_meta <- function(return_mu = NULL, J, tau_sq, 
-#                           omega_sq, bal, 
-#                           rho, P, sample_sizes, k_j,
-#                           f_c_val,
-#                           sigma_j_sq = NULL,
-#                           return_study_params = FALSE,
-#                           seed = NULL) {
-#   
-#   require(dplyr)
-#   require(purrr)
-#   if (!is.null(seed)) set.seed(seed)
-#   
-#   # Study data --------------------------------------------------------------
-#   
-#   C <-  ftoc[[f_c_val]]
-#   
-#   # cor_params <- reparm(cor_sd=cor_sd, cor_mu=cor_mu)
-#   mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
-#                          rho = rho, P = P, k_j = k_j,  f_c_val = f_c_val,
-#                          bal =bal, sigma_j_sq = sigma_j_sq, N = sample_sizes) 
-#   
-#   X <- design_matrix(C= C, J= J, bal = bal, k_j = k_j)
-#   
-#   Xbeta <- as.numeric(X %*% mu_vector)
-#   
-#   mod_data = mod(C= C, J= J, bal = bal, k_j = k_j) |> 
-#     mutate(studyid = factor(x = studyid, levels = 1:J))
-#   
-#   mod_data_stud <- mod_data |> 
-#     group_nest(studyid, .key = "X")
-#   
-#   n_ES_total <- nrow(X)
-#   
-#   
-#   
-#   u_j = rnorm(J, 0, sqrt(tau_sq))[mod_data$studyid]
-#   v_ij = rnorm(n_ES_total, 0, sqrt(omega_sq))
-#   
-#   study_data <- 
-#     tibble(
-#       delta = Xbeta + u_j + v_ij,
-#       studyid = mod_data$studyid
-#     ) |>
-#     group_by(studyid) |>
-#     summarize(
-#       delta = list(delta),
-#       k_j = n(),
-#       .groups = "drop"
-#     ) |>
-#     mutate(
-#       #  Sigma = rbeta(n=J, shape1=cor_params$alpha, shape2=cor_params$bet),
-#       Sigma = rep(rho, J),
-#       N = sample_sizes,
-#     ) 
-#   
-#   
-#     
-#   if (return_study_params) return(study_data)
-#   
-#   # Generate full meta data  -----------------------------------------------
-#   
-#   meta_reg_dat <- 
-#     study_data |> 
-#     {\(.) dplyr::mutate(.,
-#       smds = pmap(select(., -studyid), generate_smd)
-#     )}() |>
-#     left_join(mod_data_stud, by = "studyid") |>
-#     select(-delta, -k_j, -N, -Sigma) |>
-#     unnest(cols = c(smds, X))
-#   
-#   if(!is.null(return_mu)){
-#     meta_reg_dat <- list(meta_reg_dat, mu_vector)
-#   }
-#   
-#   
-#   return(meta_reg_dat)
-# }
-
-
-
-generate_meta <- function(J, tau_sq, 
-                          omega_sq, bal, 
+generate_meta <- function(J, 
+                          tau_sq, 
+                          omega_sq, 
+                          bal, 
                           mu_vector,
-                          rho, P, 
-                          sample_sizes, k_j,
+                          rho, 
+                          sample_sizes, 
+                          k_j,
                           f_c_val,
-                          sigma_j_sq = NULL,
                           return_study_params = FALSE,
                           seed = NULL) {
   
@@ -840,26 +743,12 @@ estimate_model <- function(data = NULL,
     # of replications until I get 2,500 converged samples, 
     # JEP suggested I do the following:
     
-    # CHE convergence issues: 
+    # account for the following CHE convergence issues: 
     # 1) a meta-analytic dataset sample has no dependence, 
     #    so between and within-study variances can't be estimated.
     # 2) a variance is close to 0 and can't be estimated, so try different optimizer
     
-    ## old fit
-    # rma_fit <- 
-    #   purrr::possibly(metafor::rma.mv, otherwise = NULL)(
-    #     g ~ 0 + moderator,
-    #     V = V_list, 
-    #     random = ~ 1 | study_id / esid,
-    #     data = dat,
-    #     test = "t",
-    #     sparse = TRUE,
-    #     verbose = FALSE,
-    #     control = control_list 
-    #   )
-    
-    
-    ## new fit
+
     optimizers <- c("nlminb","nloptr","Rvmmin","BFGS")
     rma_fit <- "Non-converged"
     i <- 1L
@@ -917,7 +806,7 @@ estimate_model <- function(data = NULL,
     
     
     
-  coef_RVE <-  robust(
+  coef_RVE <-  metafor::robust(
     rma_fit, # estimation model above
     cluster = study_id, # define clusters
     clubSandwich = TRUE 
@@ -960,108 +849,8 @@ estimate_model <- function(data = NULL,
 
 
 #-----------------------------------------------------------
-#### Simulation performance
-#-----------------------------------------------------------
-
-#### add in est_M, est_V, var_M, var_df for the mu_estimates 
-
-
-
-
-
-# sim_performance <- function(results) {
-# 
-#   require(dplyr)
-# 
-#   results %>%
-#     summarise(
-#       n_sim = n(),
-#       cnvg = mean(!is.na(p_val)),
-#     #  df1_mean = mean(df1),
-#     #  df2_mean = mean(df2),
-#       rej_rate_05 = mean(p_val < 0.05, na.rm = TRUE)
-#     )
-# 
-# }
-
-
-# Approximate vs. simulated power
-#### add function that joins the approximation results and sim results and 
-#### find the deviance between the two
-
-
-#-----------------------------------------------------------
 #### Simulation Driver
 #-----------------------------------------------------------
-
-## old one with the power conditional on study features (mu generated in generate_meta())
-# run_sim <- function(iterations,
-#                     J, 
-#                     tau_sq, 
-#                     omega_sq, 
-#                     bal, 
-#                     rho, 
-#                     P, 
-#                     f_c_val,
-#                     sigma_j_sq_inc = NULL,
-#                     pilot_data = NULL,
-#                     return_study_params = FALSE,
-#                     seed = NULL,
-#                     summarize_results = FALSE){
-#   
-#  require(dplyr)
-#   
-#  if (!is.null(seed)) set.seed(seed)
-#   
-# 
-#  
-#  results <- map(1:iterations, ~{
-#    
-#                   sample_dat <- n_ES_empirical(pilot_data, J = J)
-#                   
-#                   if(sigma_j_sq_inc == TRUE){
-#                     sigma_j_sq = sample_dat$sigma_j_sq
-#                   } else{
-#                     sigma_j_sq = NULL
-#                   }
-#                   
-#                   dat <- generate_meta(J = J, 
-#                                        tau_sq = tau_sq, 
-#                                        omega_sq = omega_sq, 
-#                                        bal = bal, 
-#                                        rho = rho, 
-#                                        P = P, 
-#                                        sample_sizes = sample_dat$N, 
-#                                        k_j = sample_dat$kj,
-#                                        f_c_val = f_c_val,
-#                                        sigma_j_sq = sigma_j_sq,
-#                                        return_study_params = return_study_params,
-#                                        return_mu = NULL,
-#                                        seed = seed ## maybe should remove this here and only keep in run_sim
-#                                      )
-#                   
-#               
-#                   est_res <-  estimate_model(data = dat,
-#                                              moderator_val = dat$category,
-#                                              cluster_id = dat$studyid,
-#                                              delta = dat$g, 
-#                                              delta_var =  dat$var_g,
-#                                              es_id = dat$esid,
-#                                              r= rho,
-#                                              smooth_vi = TRUE, 
-#                                              return_mu = NULL,
-#                                              control_list = list()
-#                   )
-#                   
-#                   }) |> dplyr::bind_rows()
-#   
-#  if (summarize_results) {
-#    performance <- sim_performance(results = results)
-#    return(performance)
-#  } else {
-#    return(results)
-#  }
-# }
 
 run_sim <- function(iterations,
                     J, 
@@ -1087,7 +876,7 @@ run_sim <- function(iterations,
   N_mean = mean(pilot_data$N) 
   k_mean = mean(pilot_data$kj)
   
-  if(sigma_j_sq_inc == TRUE){
+  if(sigma_j_sq_inc){
     sigma_j_sq_mean = mean(pilot_data$sigma_j_sq)
   } else{
     sigma_j_sq_mean = NULL
@@ -1111,7 +900,7 @@ run_sim <- function(iterations,
     
  
     
-    if(sigma_j_sq_inc == TRUE){
+    if(sigma_j_sq_inc){
       sigma_j_sq = sample_dat$sigma_j_sq
     } else{
       sigma_j_sq = NULL
@@ -1123,12 +912,10 @@ run_sim <- function(iterations,
                          omega_sq = omega_sq, 
                          bal = bal, 
                          rho = rho, 
-                         P = P, 
                          sample_sizes = sample_dat$N, 
                          k_j = sample_dat$kj,
                          mu_vector = mu_vector,
                          f_c_val = f_c_val,
-                         sigma_j_sq = sigma_j_sq,
                          return_study_params = return_study_params
     )
     
