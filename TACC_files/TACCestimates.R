@@ -49,7 +49,7 @@ set.seed(0303202571)
 #  
 # 
 # tm <- system.time(  results <- plyr::mdply(params,
-#                          .fun = run_sim2,
+#                          .fun = run_sim,
 #                          pilot_data = empirical_dat,
 #                          sigma_j_sq_inc = FALSE,
 #                          .parallel = FALSE))
@@ -83,7 +83,6 @@ num_conditions <- 3840
 num_core_pernode <- 48
 
 ## whole simulation
-## calcul
 
 
 hrs_percond<- as.numeric((tm_all$avg_tm_percond_all))/(60^2)
@@ -96,52 +95,34 @@ hrs_per_node <- hrs_acrosscond/num_core_pernode
 hrs_per_node/4
 
 
+## with four batches of 625 
 #625 rep per batch
-hrs_perbatch2<- as.numeric((tm_j$mean_tm_20rep[5]*(625/20))/(60^2))
-
 hrs_perbatch<- as.numeric((tm_all$avg_tm_percond_batch))/(60^2)
-
 hrs_perbatch_acrosscond <- hrs_perbatch*num_conditions
-hrs_perbatch_acrosscond2 <- hrs_perbatch2*num_conditions
-
-
-
 hrs_perbatch_node <- hrs_perbatch_acrosscond/num_core_pernode
-
-hrs_perbatch_node2 <- hrs_perbatch_acrosscond2/num_core_pernode
 
 #across 4 nodes?
 hrs_perbatch_node/4
 
-hrs_perbatch_node2/4
 
 
-# 4 batches -- 3,130 Node Hours available
-total_node_hrs <- hrs_perbatch_acrosscond*4
-total_node_hrs
+## actual time for 3840 conditions/jobs using the pylauncher 
+## 4 batches of 3840 jobs each had 625 iterations 
+## each batch was run on 4 nodes with 48 cores
 
-#number of cores 1 node
+batch1_min <- (3*60) + 30 + (47/60*1)
+batch2_min <- (3*60) + 30 + (42/60*1)
+batch3_min <- (3*60) + 31 + (47/60*1)
+batch4_min <- (3*60) + 31 + (56/60*1)
 
-
-total_node_hrs/48
-
-#maybe split across nodes?
-
-# total compute time in hrs
-as.numeric(sum(tm_j$tot_tm_byJ))/60^2
+one_job_min <- mean(batch1_min/3840, batch2_min/3840, 
+                    batch3_min/3840, batch4_min/3840)
 
 
-test <- results |> group_by(J, tau_sq, omega_sq, rho, P, f_c_val, bal) |>      summarise(
-        n_sim = n(),
-        cnvg = mean(!is.na(p_val)),
-      #  df1_mean = mean(df1),
-      #  df2_mean = mean(df2),
-        rej_rate_05 = mean(p_val < 0.05, na.rm = TRUE),
-        .groups = "drop"
-      ) |> 
-  mutate(
-    diff = P - rej_rate_05
-  )
+### if increase the number of conditions to 8640
+## time in hrs for 8640 jobs four nodes
+tm_8640jobs_hr_one_batch <- (one_job_min*8640)/60
+#7.904375 hours for each batch on four nodes. 
 
 
 
