@@ -3,17 +3,19 @@
 
 library(dplyr)
 
-set.seed(03242025)
+set.seed(20250422)
 
+#8640 conditions
 design_factors <- list(
   J = c(24, 36, 48, 60, 72),
-  tau_sq = c(0.05,  0.40)^2, 
-  omega_sq = c(0.05,  0.20)^2,
-  rho = c(.2,  .8),
+  tau_sq = c(0.05, 0.20, 0.40)^2, 
+  omega_sq = c(0.05, 0.20)^2,
+  rho = c(.2, 0.5, .8),
   P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9),
   f_c_val = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"),
   bal = c("balanced_j", "unbalanced_j") 
 )
+
 
 batches <- 4
 total_reps <- 2500

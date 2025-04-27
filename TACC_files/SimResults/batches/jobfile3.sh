@@ -3,7 +3,7 @@
 #SBATCH -o powstudcatmod_3b.o%j  # Name of outputfile
 #SBATCH -e powstudcatmod_3b.e%j  # Name of stderr error file
 #SBATCH -p skx		  # Queue (partition) name
-#SBATCH -N 4           # Total number of nodes
+#SBATCH -N 8           # Total number of nodes
 #SBATCH --ntasks-per-node 48              # Total # of mpi tasks
 #SBATCH -t 06:00:00     # Run time (hh:mm:ss) 
 #SBATCH --mail-user=bethanyhamilton@utexas.edu

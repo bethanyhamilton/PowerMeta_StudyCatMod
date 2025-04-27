@@ -65,7 +65,7 @@ source("SimFunctions/functionsdatagen.R")
 set.seed(2202025)
 
 dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
-dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+#dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
 shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
 shape_rate2 <- MASS::fitdistr(dat_kjN$sigma_j_sq, "gamma")
 
@@ -80,7 +80,7 @@ test <- power_approximation(
   sigma_j_sq_mean = mean(dat_kjN$sigma_j_sq),
   sigma_j_sq_dist = shape_rate2,
   N_dist = shape_rate, 
-  pilot_data = dat_kjN_samp, 
+  pilot_data = dat_kjN, 
   iterations = 10,
   sample_size_method = c("balanced","stylized","empirical"),
   P = .5,
@@ -101,7 +101,7 @@ tm <- system.time(blah <- power_approximation(
   sigma_j_sq_mean = mean(dat_kjN$sigma_j_sq),
   sigma_j_sq_dist = shape_rate2,
   N_dist = shape_rate, 
-  pilot_data = dat_kjN_samp, 
+  pilot_data = dat_kjN, 
   iterations = 100,
   sample_size_method = c("balanced","stylized","empirical"),
   P = .5,
@@ -462,7 +462,7 @@ mu_vector <- mu_values(
   k_j = dat_kjN_samp$kj,
   N = dat_kjN_samp$N,
   f_c_val = "P1",
-  sigma_j_sq = dat_kjN_samp$se_avg^2,
+  sigma_j_sq = dat_kjN_samp$sigma_j_sq,
   bal = "unbalanced_j"
 )
 
@@ -513,7 +513,7 @@ mu_vector <- mu_values(
   k_j = dat_kjN_samp$kj,
   N = dat_kjN_samp$N,
   f_c_val = "P5",
-  sigma_j_sq = dat_kjN_samp$se_avg^2,
+  sigma_j_sq = dat_kjN_samp$sigma_j_sq,
   bal = "balanced_j"
 )
 
@@ -616,7 +616,7 @@ test_output <- estimate_model(
    k_j = dat_kjN_samp$kj,
    N = dat_kjN_samp$N,
    f_c_val = "P5",
-   sigma_j_sq = dat_kjN_samp$se_avg^2,
+   sigma_j_sq = dat_kjN_samp$sigma_j_sq,
    bal = "balanced_j"
  )
  

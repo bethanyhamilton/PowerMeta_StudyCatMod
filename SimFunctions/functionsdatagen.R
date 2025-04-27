@@ -250,7 +250,7 @@ design_matrix <- function(C, J, bal, k_j){
 # data set with categorical moderator
 mod <- function(C, J, bal, k_j ){
 
-  N = sum(k_j)
+  K = sum(k_j)
   
   
  category_study  <-  dat_approx(C = C, 
@@ -267,7 +267,7 @@ mod <- function(C, J, bal, k_j ){
   #needs to be K x K
   covariates <- tibble(category = c(rep(category_study$cat,  k_j)),
          studyid = as.character(c(rep(c(1:J),  k_j))),
-         esid = 1:N)
+         esid = 1:K)
 
   
   return(covariates)
@@ -385,7 +385,7 @@ power_approximation <- function(
     
     N <- c(N, stylized = styled_Ns)
     kjs <- c(kjs, stylized = styled_kjs)
-    sigma_j_sqs <- c(sigma_j_sqs, balanced = styled_sigma_j_sqs)
+    sigma_j_sqs <- c(sigma_j_sqs, stylized = styled_sigma_j_sqs)
     
   }
   
@@ -682,10 +682,10 @@ generate_meta <- function(J,
   meta_reg_dat <- 
     study_data |> 
     {\(.) dplyr::mutate(.,
-                        smds = pmap(select(., -studyid), generate_smd)
+                        smds = pmap(dplyr::select(., -studyid), generate_smd)
     )}() |>
     left_join(mod_data_stud, by = "studyid") |>
-    select(-delta, -k_j, -N, -Sigma) |>
+    dplyr::select(-delta, -k_j, -N, -Sigma) |>
     unnest(cols = c(smds, X))
 
   

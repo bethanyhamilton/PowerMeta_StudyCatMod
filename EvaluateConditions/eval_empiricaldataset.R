@@ -61,6 +61,7 @@ math_dat <-
     se_avg = mean(sqrt(vi)),
     kj = n(),
     N_ess = as.integer(round(mean(ESS))),
+    sigma_j_sq = 4/N_ess,
     # N_org = as.integer(round(mean(total_N))),
     # N_diff = N_org - N_ess,
     .groups = "drop"
@@ -110,8 +111,7 @@ math_dat |>
 # only including studies where N < 500, and kj<20
 dat_kjN_math <- 
   math_dat |>  
-  dplyr::select(CitationID, kj, N = N_ess, se_avg) |> 
-  mutate(sigma_j_sq = se_avg^2) |> 
+  dplyr::select(CitationID, kj, N = N_ess, sigma_j_sq) |> 
   # Excluding effective sample sizes larger than 500 
   # and studies with more than 20 outcomes
   filter(N < 500, kj < 20) |> 
@@ -148,7 +148,7 @@ dat_kjN_math |>
 
 # Gamma parameters for N and sigma_j_sq
 shape_rate1 <- MASS::fitdistr(dat_kjN_math$N, "gamma")
-shape_rate2 <- MASS::fitdistr(dat_kjN_math$se_avg^2, "gamma")
+shape_rate2 <- MASS::fitdistr(dat_kjN_math$sigma_j_sq, "gamma")
 
 library(fitdistrplus)
 dist <- fitdistrplus::fitdist(dat_kjN_math$N, "gamma")
@@ -191,7 +191,7 @@ ggplot(all_dat, aes(x = x, y = y, fill = group)) +
 
 set.seed(20250419)
 
-shape_rate <- MASS::fitdistr(dat_kjN_math$se_avg^2, "gamma")
+shape_rate <- MASS::fitdistr(dat_kjN_math$sigma_j_sq, "gamma")
 
 x <- seq(0.008, max(dat_kjN_math$sigma_j_sq), length.out = 462)
 

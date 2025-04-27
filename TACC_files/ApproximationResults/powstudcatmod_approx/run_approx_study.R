@@ -39,17 +39,20 @@ shape_rate2 <- MASS::fitdistr(empirical_dat$sigma_j_sq, "gamma")
 
 #-------------------------------------------------------------------------------
 
-set.seed(2503025)
+set.seed(04222025)
 
+
+#8640 conditions
 design_factors <- list(
   J = c(24, 36, 48, 60, 72),
-  tau_sq = c(0.05,  0.40)^2, 
-  omega_sq = c(0.05,  0.20)^2,
-  rho = c(.2,  .8),
+  tau_sq = c(0.05, 0.20, 0.40)^2, 
+  omega_sq = c(0.05, 0.20)^2,
+  rho = c(.2, 0.5, .8),
   P = c(0.05, 0.2, 0.4, 0.6, 0.8, 0.9),
   f_c_val = c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"),
-  bal = c("balanced_j", "unbalanced_j")
+  bal = c("balanced_j", "unbalanced_j") 
 )
+
 
 
 params <- 
@@ -68,7 +71,7 @@ res <- subset(params, PYL_ID == pyl_id)
 res$PYL_ID <- NULL
 
 
-tm <- system.time(res$res <- pmap(res, .f = power_approximation,
+tm <- system.time(res$res <- pmap(res, .f = possibly(power_approximation),
                                   N_mean = mean(empirical_dat$N),
                                   k_mean =  mean(empirical_dat$kj),
                                   sigma_j_sq_mean = mean(empirical_dat$sigma_j_sq),
@@ -76,7 +79,7 @@ tm <- system.time(res$res <- pmap(res, .f = power_approximation,
                                   sigma_j_sq_dist = shape_rate2,
                                   pilot_data = empirical_dat, 
                                   average_power = TRUE,
-                                  iterations = 100,
+                                  iterations = 150,
                                   sample_size_method = c("balanced","stylized","empirical"))) 
   
 
