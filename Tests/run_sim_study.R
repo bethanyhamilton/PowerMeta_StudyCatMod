@@ -99,7 +99,10 @@ saveRDS(res_samplelvl, file = "Tests/simulation_results_condition_test_sample.rd
 #-------------------------------------------------------------------------------
 # Analyze Results
 
- results_studylvl <- res |> 
+res <- readRDS("Tests/simulation_results_condition_test_study.rds")
+res_samplelvl <- readRDS("Tests/simulation_results_condition_test_sample.rds")
+
+results_studylvl <- res |> 
   unnest(res, names_sep = ".") |> 
   dplyr::summarise(
     n_iterations_conv = sum(!is.na(res.df1)),
@@ -115,13 +118,15 @@ saveRDS(res_samplelvl, file = "Tests/simulation_results_condition_test_sample.rd
     mu_params = list(reduce(res.mu_vector_list, `+`) / n()),
     mu_est_bias = map2(mu_est_mean, mu_params, ~ .x - .y), 
     mean_power_empirical = mean(res.power_empirical),
-    se_power_empirical = sd(res.power_empirical)/sqrt(n_iterations),
+    se_power_empirical = sd(res.power_empirical) / sqrt(n_iterations),
     power_app_sim_diff =  mean_power_empirical - rej_rate_05,
     .groups = "drop"
-  )  
+  ) 
 
 results_studylvl$power_app_sim_diff
-
+results_studylvl %>% 
+  unnest(cols = c(mu_est_mean, mu_est_var, mu_params, mu_est_bias)) %>%
+  mutate(mu_est_var = unlist(mu_est_var))
 
 results_samplelvl <- res_samplelvl |> 
   unnest(res, names_sep = ".") |> 
@@ -145,3 +150,6 @@ results_samplelvl <- res_samplelvl |>
   )  
 
 results_samplelvl$power_app_sim_diff
+results_samplelvl %>% 
+  unnest(cols = c(mu_est_mean, mu_est_var, mu_params, mu_est_bias)) %>%
+  mutate(mu_est_var = unlist(mu_est_var))

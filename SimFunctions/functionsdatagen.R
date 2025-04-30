@@ -798,7 +798,10 @@ generate_meta <- function(J,
   
   
   
-  if (return_study_params) return(study_data)
+  if (return_study_params) {
+    study_data <- left_join(study_data, mod_data_stud, by = "studyid")
+    return(study_data)
+  }
   
   # Generate full meta data  -----------------------------------------------
   
