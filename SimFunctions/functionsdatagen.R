@@ -438,9 +438,132 @@ power_approximation <- function(
       ) 
   } else {
     res_CHE_RVE <- res_CHE_RVE |> 
-      mutate(samp_method = str_remove(samp_method, "[:digit:]+"))
+      mutate(samp_method = str_remove(samp_method, "[:digit:]+")) 
   }
   
+  
+  return(res_CHE_RVE)
+  
+}
+
+
+
+power_approximation_alt <- function(
+    
+  J, 
+  tau_sq, 
+  omega_sq, 
+  rho, 
+  N_mean = NULL,
+  k_mean = NULL,
+  sigma_j_sq_mean = NULL,
+  N_dist = NULL,
+  sigma_j_sq_dist = NULL,
+  pilot_data = NULL,
+  sample_size_method = c("balanced","stylized","empirical"),
+  P, 
+  f_c_val,  
+  bal,
+  mu_vec
+  
+){
+  
+  # -----------------------------------------------------
+  ## sampling methods code below pulled from https://osf.io/gaz9t/  and 
+  ## incorporated into this study
+  
+  ### added in sample sigma_j_sq
+  # -------------------------------------------------------  
+  
+  # if (!is.null(seed)) set.seed(seed)
+  N <- list()
+  kjs <- list()
+  sigma_j_sqs <- list()
+  
+  # Average sample sizes and number of effect sizes
+  if ("balanced" %in% sample_size_method) {
+    
+    if (is.null(N_mean) | is.null(k_mean) ) stop("Must specify values for N_mean and k_mean.")
+    
+    N <- c(N, balanced = N_mean)
+    kjs <- c(kjs, balanced = k_mean)
+    sigma_j_sqs <- c(sigma_j_sqs, balanced = sigma_j_sq_mean)
+  }
+  
+  # Stylized sample size and n ES distributions
+  if ("stylized" %in% sample_size_method) {
+    
+    if (is.null(N_dist) | is.null(k_mean)) stop("Must specify values for sigma2_dist and k_mean.")
+    
+    # styled_Ns <- map(1:iterations, ~pmax(10, rgamma(J, shape = N_dist$estimate[1], rate = N_dist$estimate[2])))
+    # styled_sigma_j_sqs <- map(1:iterations, ~pmax(0.008, rgamma(J, shape = sigma_j_sq_dist$estimate[1], rate = sigma_j_sq_dist$estimate[2])))
+    # styled_kjs <- map(1:iterations, ~ 1 + rpois(J, k_mean - 1))
+    
+    
+    styled_Ns <- list(pmax(10, rgamma(J, shape = N_dist$estimate[1], rate = N_dist$estimate[2])))
+    styled_sigma_j_sqs <- list(pmax(0.008, rgamma(J, shape = sigma_j_sq_dist$estimate[1], rate = sigma_j_sq_dist$estimate[2])))
+    styled_kjs <- list(1 + rpois(J, k_mean - 1))
+    
+    N <- c(N, stylized = styled_Ns)
+    kjs <- c(kjs, stylized = styled_kjs)
+    sigma_j_sqs <- c(sigma_j_sqs, stylized = styled_sigma_j_sqs)
+    
+  }
+  
+  
+  # Empirical sample sizes and k ES distributions
+  if ("empirical" %in% sample_size_method) {
+    
+    if (is.null(pilot_data)) stop("Must specify a dataset with pilot_data.")
+    
+ #   pilot_sample <- map(1:iterations, ~ n_ES_empirical(pilot_data, J))
+    N <- c(N, empirical = list(pilot_data$N))
+    kjs <- c(kjs, empirical =  list(pilot_data$kj))
+    sigma_j_sqs <- c(sigma_j_sqs, empirical = list(pilot_data$sigma_j_sq)) 
+  }
+  
+  
+  C <-  ftoc[[f_c_val]]
+  
+  
+  
+  # Get parameter mu value
+  
+  # mu_vec <- mu_values(J = J, 
+  #                     tau_sq = tau_sq, 
+  #                     omega_sq = omega_sq, 
+  #                     rho = rho, P = P,
+  #                     f_c_val = f_c_val,
+  #                     bal =bal, 
+  #                     k_j = k_mean,  
+  #                     sigma_j_sq = sigma_j_sq_mean, 
+  #                     N = N_mean
+  # )
+  # 
+  
+  
+  res_CHE_RVE <- pmap_df(
+    list( kjs, N, sigma_j_sqs), .f = run_power, C=C,
+    J = J, tau_sq = tau_sq, omega_sq = omega_sq, mu_vector = mu_vec ,rho = rho, bal = bal, P =P, f_c_val = f_c_val,
+    .id = "samp_method"
+  )
+  
+  
+  # if (average_power) {
+  #   res_CHE_RVE <- res_CHE_RVE |>
+  #     mutate(samp_method = str_remove(samp_method, "[:digit:]+")) |>
+  #     group_by(samp_method) |>
+  #     dplyr::summarise(
+  #       across(c(power, ncp, df_den), list(mean = mean, var = var, n = length, se = ~sd(.x)/sqrt(length(.x)) ), .names = "{.col}.{.fn}"),
+  #       .groups = "drop"
+  #     )
+  # } else {
+  #   res_CHE_RVE <- res_CHE_RVE |>
+  #     mutate(samp_method = str_remove(samp_method, "[:digit:]+"))
+  # }
+  
+    res_CHE_RVE <- res_CHE_RVE |>
+      pivot_wider(names_from = samp_method,values_from = c(power, ncp, df_den))
   
   return(res_CHE_RVE)
   
@@ -863,8 +986,7 @@ run_sim <- function(iterations,
                     sigma_j_sq_inc = NULL,
                     pilot_data = NULL,
                     return_study_params = FALSE,
-                    seed = NULL,
-                    summarize_results = FALSE){
+                    seed = NULL){
   
 
   
@@ -938,6 +1060,135 @@ run_sim <- function(iterations,
     est_res
     
   }) |> dplyr::bind_rows()
+  
+}
+
+
+
+run_sim_alt <- function(iterations,
+                    J, 
+                    tau_sq, 
+                    omega_sq, 
+                    bal, 
+                    rho, 
+                    P, 
+                    f_c_val,
+                    sigma_j_sq_inc = NULL,
+                    pilot_data = NULL,
+                    return_study_params = FALSE,
+                    seed = NULL,
+                    #approx arguments
+                    N_dist = NULL,
+                    sigma_j_sq_dist = NULL,
+                    sample_size_method = c("balanced","stylized","empirical")
+                   ){
+  
+  
+  
+  if (!is.null(seed)) set.seed(seed)
+  
+  
+  
+  
+  N_mean = mean(pilot_data$N) 
+  k_mean = mean(pilot_data$kj)
+  
+  if(sigma_j_sq_inc){
+    sigma_j_sq_mean = mean(pilot_data$sigma_j_sq)
+  } else{
+    sigma_j_sq_mean = NULL
+  }
+  
+  
+  mu_vector <- mu_values(J = J, tau_sq = tau_sq, omega_sq = omega_sq, 
+                         rho = rho, P = P,
+                         f_c_val = f_c_val,
+                         bal =bal, 
+                         k_j = k_mean,  
+                         sigma_j_sq = sigma_j_sq_mean, 
+                         N = N_mean
+  )
+  
+  
+  
+  
+  results <- map(1:iterations, ~{
+    
+    
+    sample_dat <- n_ES_empirical(pilot_data, J = J)
+    
+    
+    
+    if(sigma_j_sq_inc){
+      sigma_j_sq = sample_dat$sigma_j_sq
+    } else{
+      sigma_j_sq = NULL
+    }
+    
+    
+    
+    approx_dat <- power_approximation_alt(J = J,
+                                      tau_sq = tau_sq, 
+                                      omega_sq = omega_sq,
+                                      rho = rho, 
+                                      N_mean = N_mean, 
+                                      k_mean = k_mean,
+                                      sigma_j_sq_mean = sigma_j_sq_mean,
+                                      N_dist = N_dist,
+                                      sigma_j_sq_dist = sigma_j_sq_dist,
+                                      pilot_data =  sample_dat, 
+                                      sample_size_method = sample_size_method, 
+                                      P = P, 
+                                      f_c_val = f_c_val, 
+                                      bal = bal,
+                                      mu_vec = mu_vector
+   )
+    
+    
+    
+    dat <- generate_meta(J = J, 
+                         tau_sq = tau_sq, 
+                         omega_sq = omega_sq, 
+                         bal = bal, 
+                         rho = rho, 
+                         sample_sizes = sample_dat$N, 
+                         k_j = sample_dat$kj,
+                         mu_vector = mu_vector,
+                         f_c_val = f_c_val,
+                         return_study_params = return_study_params
+    )
+    
+    
+    est_res <-  estimate_model(data = dat,
+                               moderator_val = dat$category,
+                               cluster_id = dat$studyid,
+                               delta = dat$g, 
+                               delta_var =  dat$var_g,
+                               es_id = dat$esid,
+                               r= rho,
+                               smooth_vi = TRUE, 
+                               control_list = list()
+    )
+    
+    
+    
+    est_res$mu_vector_list <-  list(mu_vector)
+    
+    est_res <- bind_cols(est_res, approx_dat)
+    
+    est_res
+    
+  }) |> dplyr::bind_rows()
+  
+  
+  # if (average_power) {
+  #   res_CHE_RVE <- res_CHE_RVE |>
+  #     mutate(samp_method = str_remove(samp_method, "[:digit:]+")) |>
+  #     group_by(samp_method) |>
+  #     dplyr::summarise(
+  #       across(c(power, ncp, df_den), list(mean = mean, var = var, n = length, se = ~sd(.x)/sqrt(length(.x)) ), .names = "{.col}.{.fn}"),
+  #       .groups = "drop"
+  #     )}
   
 }
 

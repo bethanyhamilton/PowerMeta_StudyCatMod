@@ -111,6 +111,42 @@ tm <- system.time(blah <- power_approximation(
   seed = NULL))
 
 
+rm(list=ls())
+source("SimFunctions/functionsdatagen.R")
+set.seed(2902025)
+
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
+shape_rate2 <- MASS::fitdistr(dat_kjN$sigma_j_sq, "gamma")
+mu_vector <- mu_values(J = 24, tau_sq = .40^2, 
+                       omega_sq = .10^2,
+                       rho = .8, P = .5, 
+                       k_j =mean(dat_kjN$kj), N =  mean(dat_kjN$N), 
+                       f_c_val = "P5", 
+                       sigma_j_sq = mean(dat_kjN$sigma_j_sq),
+                       bal ="balanced_j" )
+
+tm <- system.time(blah <- power_approximation_alt(
+  J = 24, 
+  tau_sq = .40^2, 
+  omega_sq= .10^2, 
+  rho = 0.8, 
+  N_mean = mean(dat_kjN$N), 
+  k_mean = mean(dat_kjN$kj),
+  sigma_j_sq_mean = mean(dat_kjN$sigma_j_sq),
+  sigma_j_sq_dist = shape_rate2,
+  N_dist = shape_rate, 
+  pilot_data = dat_kjN_samp, 
+  sample_size_method = c("balanced","stylized","empirical"),
+  P = .5,
+  f_c_val = "P5",
+  bal = "balanced_j",
+  mu_vec = mu_vector
+  )
+  )
+
+
 #------------------------------------------------------------------------------------
 
 ### ------------------------------------------- ###
@@ -720,7 +756,31 @@ test_output <- estimate_model(
                                       seed = NULL,
                                       summarize_results = FALSE))
  
-
+ rm(list=ls())
+ source("SimFunctions/functionsdatagen.R")
+ dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+ #dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 24, with_replacement = TRUE)
+ shape_rate <- MASS::fitdistr(dat_kjN$N, "gamma")
+ shape_rate2 <- MASS::fitdistr(dat_kjN$sigma_j_sq, "gamma")
+ 
+ test <- run_sim_alt(iterations = 3,
+                         J = 60, 
+                         tau_sq = (0.40)^2, 
+                         omega_sq = (0.20)^2, 
+                         bal = "balanced_j", 
+                         rho = .8, 
+                         P = .9, 
+                         f_c_val = "P8",
+                         sigma_j_sq_inc = TRUE,
+                         pilot_data = dat_kjN,
+                         return_study_params = FALSE,
+                         seed = 4532,
+                         #approx arguments
+                         N_dist = shape_rate,
+                         sigma_j_sq_dist = shape_rate2,
+                         sample_size_method = c("balanced","stylized","empirical"))
+ 
+ test
  
  ### Notes
  #number of conditions
