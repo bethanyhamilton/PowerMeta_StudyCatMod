@@ -156,18 +156,24 @@ rm(list = ls())
 source("SimFunctions/functionsdatagen.R")
 
 
-sample_empirical_dat <- tibble(N = rep(200, 12),
-                               k_j  = c(3, 4, 3, 5, 3, 3, 3, 3, 3, 3, 3, 3))
+# sample_empirical_dat <- tibble(N = rep(200, 12),
+#                                k_j  = c(3, 4, 3, 5, 3, 3, 3, 3, 3, 3, 3, 3))
+
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+
+
 mu_vector <- mu_values(
   J = 12,
   tau_sq = .05^2,
   omega_sq = .05^2,
   rho = .5,
   P = .9,
-  k_j = sample_empirical_dat$k_j,
-  N = sample_empirical_dat$N,
+  k_j = dat_kjN_samp$kj,
+  N = dat_kjN_samp$N,
   f_c_val = "P5",
-  #sigma_j_sq = NA,
+  sigma_j_sq = dat_kjN_samp$sigma_j_sq,
   bal = "balanced_j"
 )
 
@@ -177,17 +183,13 @@ meta_dat <- generate_meta(
   omega_sq = .05^2,
   bal = "balanced_j",
   mu_vector = mu_vector,
-  #C = 4,
   rho = .5,
-  sample_sizes = sample_empirical_dat$N,
-  k_j = sample_empirical_dat$k_j,
-  
+  sample_sizes = dat_kjN_samp$N,
+  k_j = dat_kjN_samp$kj,
   f_c_val = "P5",
   return_study_params = FALSE,
   seed = NULL
 )
-
-
 
 
 ### clubSandwich df
