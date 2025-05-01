@@ -124,6 +124,20 @@ data.frame(param = c(tau_sq, omega_sq), est = rma_fit$sigma2) |> sqrt()
 #-------------------------------------------------------------------------------
 # Test run_power()
 
+run_power(
+  C = 3, 
+  J = 40, 
+  tau_sq = .05^2, 
+  omega_sq = .05^2, 
+  rho = 0.6, 
+  k_j = 1L + rpois(40, 3),
+  P = 10000, 
+  f_c_val = "P4",
+  mu_vector = c(0,0.1,0.2),
+  bal = "balanced_j",
+  sigma_j_sq = rep(4 / 60, 40)
+)
+
 debug(run_power)
 run_power(
   C = length(mu_vector), 
