@@ -123,20 +123,35 @@ data.frame(param = c(tau_sq, omega_sq), est = rma_fit$sigma2) |> sqrt()
 
 #-------------------------------------------------------------------------------
 # Test run_power()
-
+J <- 48
 run_power(
   C = 3, 
-  J = 40, 
+  J = J, 
   tau_sq = .05^2, 
   omega_sq = .05^2, 
   rho = 0.6, 
-  k_j = 1L + rpois(40, 3),
+  k_j = 1L + rpois(J, 3),
   P = 10000, 
   f_c_val = "P4",
   mu_vector = c(0,0.1,0.2),
   bal = "balanced_j",
-  sigma_j_sq = rep(4 / 60, 40)
+  sigma_j_sq = rep(4 / 60, J)
 )
+
+run_power(
+  C = 3, 
+  J = J, 
+  tau_sq = .05^2, 
+  omega_sq = .05^2, 
+  rho = 0.6, 
+  k_j = rep(1L, J),
+  P = 10000, 
+  f_c_val = "P4",
+  mu_vector = c(0,0.1,0.2),
+  bal = "balanced_j",
+  sigma_j_sq = rep(4 / 60, J)
+)
+
 
 debug(run_power)
 run_power(
