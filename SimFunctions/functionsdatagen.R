@@ -55,12 +55,15 @@ multiple_categories <- function(data= NULL,
   q <-  c - 1
   
   
-  study_level_data <-  dat |> 
-        group_by(cluster, moderator) |>
+  study_level_data <-  
+    dat |> 
+    group_by(cluster, moderator) |>
     dplyr::summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') |> 
-    mutate(tau_sq = tau_sq_val,
-           omega_sq = omega_sq_val, 
-           rho = rho_val)
+    mutate(
+      tau_sq = tau_sq_val,
+      omega_sq = omega_sq_val, 
+      rho = rho_val
+    )
 
   
   
