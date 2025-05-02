@@ -17,6 +17,7 @@ multiple_categories <- function(data= NULL,
                                 cluster_id, 
                                 sigma_j_sq_val, 
                                 rho_val, 
+                                k_j_val,
                                 omega_sq_val, 
                                 tau_sq_val){
   
@@ -25,6 +26,7 @@ multiple_categories <- function(data= NULL,
   if (!is.null(data)) {
     moderator_call <- substitute(moderator_val)
     cluster_call <- substitute(cluster_id)
+    k_j_val_call <- substitute(k_j_val)
     sigma_j_sq_call <- substitute(sigma_j_sq_val)
     rho_call <- substitute(rho_val)
     omega_sq_call <- substitute(omega_sq_val)
@@ -35,6 +37,7 @@ multiple_categories <- function(data= NULL,
     
     moderator_val <- eval(moderator_call, env)
     cluster_id <- eval(cluster_call, env)
+    k_j_val <- eval(k_j_val_call, env)
     sigma_j_sq_val <- eval(sigma_j_sq_call, env)
     rho_val <- eval(rho_call, env)
     omega_sq_val <- eval(omega_sq_call, env)
@@ -47,6 +50,7 @@ multiple_categories <- function(data= NULL,
     moderator = moderator_val,
     sigma_j_sq = sigma_j_sq_val,
     rho = rho_val,
+    k_j = k_j_val,
     omega_sq = omega_sq_val, 
     tau_sq = tau_sq_val
   )
@@ -55,22 +59,13 @@ multiple_categories <- function(data= NULL,
   q <-  c - 1
   
   
-  study_level_data <-  dat |> 
-        group_by(cluster, moderator) |>
-    dplyr::summarise(mean_var = mean(sigma_j_sq), k_j = n(), .groups = 'drop') |> 
-    mutate(tau_sq = tau_sq_val,
-           omega_sq = omega_sq_val, 
-           rho = rho_val)
-
-  
-  
   by_category <-  
-    study_level_data |> 
+    dat |> 
     group_by(moderator) |> 
     mutate(
       w_j = study_level_weights(
         k_j = k_j,
-        sigma_j_sq = mean_var, 
+        sigma_j_sq = sigma_j_sq, 
         tau_sq = tau_sq, 
         rho = rho, 
         omega_sq = omega_sq 
@@ -124,6 +119,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
                                     rho_val, 
                                     omega_sq_val, 
                                     tau_sq_val,
+                                    k_j_val, 
                                     mu, 
                                     alpha) {
   
@@ -133,6 +129,7 @@ power_CHE_RVE_study_cat <- function(data = NULL,
                           data = data, 
                           moderator_val = moderator_val, 
                           cluster_id = cluster_id, 
+                          k_j_val = k_j_val,
                           sigma_j_sq_val = sigma_j_sq_val, 
                           rho_val = rho_val,
                           omega_sq_val = omega_sq_val, 
@@ -476,6 +473,7 @@ run_power <- function(C,
                                     rho_val = dat_app$rho,
                                     omega_sq_val = dat_app$omega_sq,
                                     tau_sq_val = dat_app$tau_sq,
+                                    k_j_val = dat_app$k_j,
                                     mu = mu_vector, 
                                     alpha = .05)
   
@@ -523,6 +521,7 @@ mu_values <- function(
     moderator_val = cat, 
     cluster_id = studyid, 
     sigma_j_sq_val = sigma_j_sq, 
+    k_j_val = k_j,
     rho_val = rho,
     omega_sq_val = omega_sq, 
     tau_sq_val = tau_sq
@@ -863,8 +862,7 @@ run_sim <- function(iterations,
                     sigma_j_sq_inc = NULL,
                     pilot_data = NULL,
                     return_study_params = FALSE,
-                    seed = NULL,
-                    summarize_results = FALSE){
+                    seed = NULL){
   
 
   
