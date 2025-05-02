@@ -56,7 +56,55 @@ run_power(C = 4,
           mu_vector = mu_vector)
 
 
+## check to see if change k_j value you get a different value
+run_power(C = 4,
+          J = 12,
+          tau_sq = .05^2,
+          omega_sq = .05^2,
+          rho = .5,
+          k_j = 4,
+          N = 30,
+          bal = "balanced_j",
+          P = .9, 
+          f_c_val = "P5",
+          mu_vector = mu_vector)
 
+#### using a vector for kj, N, sigma_j_sq
+rm(list=ls())
+
+source("SimFunctions/functionsdatagen.R")
+
+dat_kjN <- readRDS("SimFunctions/dat_kjN_mathdat.rds")
+dat_kjN_samp <- n_ES_empirical(dat_kjN, J = 12, with_replacement = TRUE)
+
+## make my mu vector
+mu_vector <- mu_values(J = 12, tau_sq = .05^2, 
+                       omega_sq = .05^2,
+                       rho = .5, P = .9, 
+                       k_j = dat_kjN_samp$kj, 
+                       N = dat_kjN_samp$N, 
+                       f_c_val = "P5", 
+                       sigma_j_sq = dat_kjN_samp$sigma_j_sq,
+                       bal ="balanced_j" )
+
+
+
+run_power(C = 4,
+          J = 12,
+          tau_sq = .05^2,
+          omega_sq = .05^2,
+          rho = .5,
+          k_j = dat_kjN_samp$kj, 
+          N = dat_kjN_samp$N, 
+          sigma_j_sq = dat_kjN_samp$sigma_j_sq,
+            
+          bal = "balanced_j",
+          P = .9, 
+          f_c_val = "P5",
+          mu_vector = mu_vector)
+
+debug(multiple_categories)
+debug(study_level_weights)
 ### --------------------------------------------------------- ###
 ### Demonstrate Power Approximation given a set of conditions ###
 ### --------------------------------------------------------- ###
@@ -152,6 +200,14 @@ meta_dat <- generate_meta(
 )
 
 
+meta_dat_study <- meta_dat |> 
+  select(-g, -esid) |> 
+  group_by(studyid) |> 
+  mutate(k_j = n(),
+         var_g_j = mean(var_g , na.rm = TRUE)) |> 
+  ungroup() |> 
+  select(-var_g) |> 
+  distinct()
 
 
 ### clubSandwich df
@@ -175,7 +231,7 @@ fit <- rma.mv(
   method = "REML"
 )
 
-
+fit_RVE <- conf_int(fit, vcov = "CR2")
 
 V_sep <- vcovCR(fit, cluster = meta_dat$studyid, type = "CR2")
 
@@ -184,11 +240,12 @@ clubsandwichdf <- Wald_test((fit), constraints = constrain_equal(1:4), vcov = V_
 
 ### my function df
 multiplecat  <- multiple_categories(
-  data = meta_dat,
+  data = meta_dat_study,
   moderator_val = category,
   cluster_id = studyid,
-  sigma_j_sq_val = var_g,
+  sigma_j_sq_val = var_g_j,
   rho_val = .5,
+  k_j_val = k_j,
   omega_sq_val = fit$sigma2[2],
   tau_sq_val = fit$sigma2[1]
 )
@@ -705,8 +762,7 @@ test_output <- estimate_model(
                                     sigma_j_sq_inc = FALSE,
                                     pilot_data = dat_kjN, 
                                     return_study_params = FALSE,
-                                    seed = NULL,
-                                    summarize_results = FALSE))
+                                    seed = NULL))
  
  tm2 <- system.time(test2 <- run_sim(iterations = 3, 
                                       J = 60, tau_sq = (0.40)^2, 
@@ -717,8 +773,7 @@ test_output <- estimate_model(
                                       sigma_j_sq_inc = FALSE,
                                       pilot_data = dat_kjN, 
                                       return_study_params = FALSE,
-                                      seed = NULL,
-                                      summarize_results = FALSE))
+                                      seed = NULL))
  
 
  
