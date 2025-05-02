@@ -420,7 +420,7 @@ power_approximation <- function(
   
   res_CHE_RVE <- pmap_df(
     list( kjs, N, sigma_j_sqs), .f = run_power, C=C,
-       J = J, tau_sq = tau_sq, omega_sq = omega_sq, mu_vector = mu_vec ,rho = rho, bal = bal, P =P, f_c_val = f_c_val,
+       J = J, tau_sq = tau_sq, omega_sq = omega_sq, mu_vector = mu_vec ,rho = rho, bal = bal, f_c_val = f_c_val,
        .id = "samp_method"
   )
   
@@ -450,7 +450,6 @@ run_power <- function(C,
                       omega_sq, 
                       rho, 
                       k_j, 
-                      P, 
                       f_c_val,
                       mu_vector,
                       bal,

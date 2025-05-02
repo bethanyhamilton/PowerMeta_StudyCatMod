@@ -51,7 +51,6 @@ run_power(C = 4,
           k_j = 3,
           N = 30,
           bal = "balanced_j",
-          P = .9, 
           f_c_val = "P5",
           mu_vector = mu_vector)
 
@@ -65,7 +64,6 @@ run_power(C = 4,
           k_j = 4,
           N = 30,
           bal = "balanced_j",
-          P = .9, 
           f_c_val = "P5",
           mu_vector = mu_vector)
 
@@ -97,9 +95,7 @@ run_power(C = 4,
           k_j = dat_kjN_samp$kj, 
           N = dat_kjN_samp$N, 
           sigma_j_sq = dat_kjN_samp$sigma_j_sq,
-            
           bal = "balanced_j",
-          P = .9, 
           f_c_val = "P5",
           mu_vector = mu_vector)
 
